@@ -7,8 +7,7 @@ Requires at least: 3.0.0
 Tested up to: 3.1.2
 Stable tag: 1.4.3
 
-Integrate Rezgo, the leading tour and activity booking platform with
-your WordPress website.
+Integrate Rezgo, the leading tour and activity booking platform with your WordPress website.
 
 == Description ==
 
