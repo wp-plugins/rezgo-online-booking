@@ -5,13 +5,13 @@ Tags: tours, activities, events, attractions, booking, reservation,
 ticketing, e-commerce, business, rezgo
 Requires at least: 3.0.0
 Tested up to: 3.1.2
-Stable tag: 1.4.3
+Stable tag: 1.4.4
 
 Integrate Rezgo, the leading tour and activity booking platform with your WordPress website.
 
 == Description ==
 
-> This plugin is completely free to use, however, it requires a Rezgo account.  <a href="http://www.rezgo.com" rel="nofollow">Try Rezgo today</a> and experience the World's best hosted booking platform.
+> This plugin is completely free to use, but it requires a Rezgo account.  <a href="http://www.rezgo.com" rel="nofollow">Try Rezgo today</a> and experience the world's best hosted booking platform.
 
 **Rezgo** is a cloud based software as a service booking system that
 gives businesses the ability to manage their tour or activity
@@ -147,6 +147,11 @@ booking engine.
 
 == Changelog ==
 
+= 1.4.4 =
+* Fixed a few minor errors.
+* Improved XML error reporting accuracy.
+* Increased version number.
+
 = 1.4.3 =
 * Plugin name updated.
 * Fixed a bug with secure connections to the rezgo XML with curl.
@@ -158,8 +163,7 @@ booking engine.
 * Added support for WordPress Multisite.
 
 = 1.4.1 =
-* Fixed a bug with the details links on the calendar when the month
-auto-advanced.
+* Fixed a bug with the details links on the calendar when the month auto-advanced.
 
 = 1.4 =
 * Fixed a number of template path issues.

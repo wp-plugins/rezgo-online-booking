@@ -4,7 +4,7 @@
 		This is the Rezgo parser class, it handles processing for the Rezgo XML.
 		
 		VERSION:
-				1.4.3
+				1.4
 		
 		- Documentation and latest version
 				http://support.rezgo.com/developers/rezgo-open-source-php-parser.html
@@ -49,7 +49,7 @@
 
 	class RezgoSite {
 	
-		var $version = '1.4.3';
+		var $version = '1.4';
 	
 		var $xml_path;
 		
