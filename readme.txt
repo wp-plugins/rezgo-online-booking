@@ -4,8 +4,8 @@ Donate link: http://www.rezgo.com/
 Tags: tours, activities, events, attractions, booking, reservation,
 ticketing, e-commerce, business, rezgo
 Requires at least: 3.0.0
-Tested up to: 3.1.2
-Stable tag: 1.4.5
+Tested up to: 3.3.1
+Stable tag: 1.5
 
 Integrate Rezgo, the leading tour and activity booking platform with your WordPress website.
 
@@ -147,6 +147,18 @@ booking engine.
 
 == Changelog ==
 
+
+= 1.5 =
+* Added support for passing variables to the shortcode.
+* Added support for new multi-tag searches.
+* Improved handling of API keys entered on settings page.
+* Switched all remaining file fetching to use configured fetch method.
+* Plugin update should no longer remove custom templates.
+* Fixed a number of display and instruction errors on settings page.
+* Fixed an issue with 'required' field alerts on some browsers.
+* Fixed a rare bug with the receipt print button.
+* Fixed a bug with smart/keyword searches failing due to bad encoding.
+* Fixed an issue with the plugin not returning it's output correctly.
 
 
 = 1.4.5 =

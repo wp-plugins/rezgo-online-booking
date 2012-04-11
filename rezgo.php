@@ -1,9 +1,10 @@
 <?php
+
 	/*
 		Plugin Name: Rezgo Online Booking
 		Plugin URI: http://wordpress.org/extend/plugins/rezgo-online-booking/
 		Description: Connect WordPress to your Rezgo account and accept online bookings directly on your website.
-		Version: 1.4.5
+		Version: 1.5
 		Author: Rezgo
 		Author URI: http://www.rezgo.com
 		License: Modified BSD
@@ -124,7 +125,7 @@
 			'(.+?)/terms_popup(.php)?/?$'
 			=> 'index.php?pagename=$matches[1]&rezgo_page=terms_popup',
 			
-			// wordpress only, terms redirect page
+			// wordpress only, shorturl redirect page
 			'(.+?)/shorturl_ajax(.php)?/?$'
 			=> 'index.php?pagename=$matches[1]&rezgo_page=shorturl_ajax',
 			
@@ -147,7 +148,7 @@
 	global $wp_current_page;
 	
 	add_action('wp', 'rezgo_set_globals');
-	 
+	
 	function rezgo_set_globals($wp) {
 		
 		global $matched_query, $wp_current_page;
@@ -158,10 +159,11 @@
 		// the pagename can hide under a couple different names
 		$wp_current_page = $wp->query_vars['pagename'];
 		
-		// register the URL vars as _REQUEST superglobals
-		// this way they act like normal mod_rewrite	
+		// register the URL vars as _REQUEST superglobals, this way they act like normal mod_rewrite and
+		// we can use regular $_REQUEST for page requests below. This also allows us to additional more 
+		// variables in the shortcode, such as rezgo_page.
 		foreach($matched_query as $k => $v) {
-			$_REQUEST[$k] = $v;
+			$_REQUEST[$k] = urldecode($v);
 		}
 		
 		// extract the wordpress install path, in case we are in a subdirector
@@ -191,45 +193,58 @@
 		
 		global $wp_current_page;
 		
-		if($matched_query['rezgo_page'] == 'tour_details') {
-			echo rezgo_display_details();
-		} elseif($matched_query['rezgo_page'] == 'error') {
-			echo rezgo_display_error();
-		} elseif($matched_query['rezgo_page'] == 'about') {
-			echo rezgo_display_about();
-		} elseif($matched_query['rezgo_page'] == 'contact') {
-			echo rezgo_display_contact();
-		} elseif($matched_query['rezgo_page'] == 'terms') {
-			echo rezgo_display_terms();
-		} elseif($matched_query['rezgo_page'] == 'book') {
-			echo rezgo_display_book();
-		} elseif($matched_query['rezgo_page'] == 'booking_complete') {
-			echo rezgo_display_complete();
-		} elseif($matched_query['rezgo_page'] == 'booking_complete_print') {
+		
+		// Process any arguments on the shortcode that we have into _REQUEST variables
+		// we only want arguments that aren't already set as a _REQUEST, so that we don't
+		// break the entire booking flow by fixing it to one page or id
+		if($args) {
+			foreach($args as $k => $v) {
+				if(!$_REQUEST[$k]) {
+					$_REQUEST[$k] = $v;
+				}
+			}
+		}
+		
+		
+		if($_REQUEST['rezgo_page'] == 'tour_details') {
+			return rezgo_display_details();
+		} elseif($_REQUEST['rezgo_page'] == 'error') {
+			return rezgo_display_error();
+		} elseif($_REQUEST['rezgo_page'] == 'about') {
+			return rezgo_display_about();
+		} elseif($_REQUEST['rezgo_page'] == 'contact') {
+			return rezgo_display_contact();
+		} elseif($_REQUEST['rezgo_page'] == 'terms') {
+			return rezgo_display_terms();
+		} elseif($_REQUEST['rezgo_page'] == 'book') {
+			return rezgo_display_book();
+		} elseif($_REQUEST['rezgo_page'] == 'booking_complete') {
+			return rezgo_display_complete();
+		} elseif($_REQUEST['rezgo_page'] == 'booking_complete_print') {
 			// this print page redirects a standard request to a plugin-specific file
 			foreach($_REQUEST as $k => $v) { $string[] = $k.'='.$v; }
 			header("location: ".REZGO_DIR.'/booking_complete_print.php?'.implode("&", $string));
 			exit;
-		} elseif($matched_query['rezgo_page'] == 'terms_popup') {
+		} elseif($_REQUEST['rezgo_page'] == 'terms_popup') {
 			// this terms popup redirects a standard request to a plugin-specific file
 			foreach($_REQUEST as $k => $v) { $string[] = $k.'='.$v; }
 			header("location: ".REZGO_DIR.'/terms_popup.php?'.implode("&", $string));
 			exit;
-		} elseif($matched_query['rezgo_page'] == 'shorturl_ajax') {
+		} elseif($_REQUEST['rezgo_page'] == 'shorturl_ajax') {
 			// this shorturl page redirects a standard request to a plugin-specific ajax file
 			foreach($_REQUEST as $k => $v) { $string[] = $k.'='.$v; }
 			header("location: ".REZGO_DIR.'/shorturl_ajax.php?'.implode("&", $string));
 			exit;
-		} elseif($matched_query['rezgo_page'] == 'calendar') {
+		} elseif($_REQUEST['rezgo_page'] == 'calendar') {
 			// this calendar page redirects a standard request to a plugin-specific ajax file
 			foreach($_REQUEST as $k => $v) { $string[] = $k.'='.$v; }
 			header("location: ".REZGO_DIR.'/calendar.php?'.implode("&", $string));
 			exit;
-		} elseif($matched_query['rezgo_page'] == 'book_ajax') {
+		} elseif($_REQUEST['rezgo_page'] == 'book_ajax') {
 			rezgo_display_booking();
 		} else {
 			// if we aren't displaying anything else, show the index
-			echo rezgo_display_index($hook_args);
+			return rezgo_display_index($hook_args);
 		}
 		
 	}
@@ -488,5 +503,83 @@
 		
 		$site->sendTo(REZGO_DIR.'/book_ajax.php?response='.$response);
 	}
-							
+	
+	
+	/* 
+		------------------------------------------------------------------------
+		These functions are for preserving the custom templates during an update
+		------------------------------------------------------------------------
+	*/
+	
+	$_REQUEST['upgrade_id'] = rand(1,100).rand(1,100);	
+	
+	function rezgo_upgrade_copy($source, $dest) {
+	
+		// Check for symlinks
+		if (is_link($source)) return symlink(readlink($source), $dest);
+		
+		// Simple copy for a file
+		if (is_file($source)) return copy($source, $dest);
+		
+		// Make destination directory
+		if (!is_dir($dest)) mkdir($dest);
+			
+		// Loop through the folder
+		$dir = dir($source);
+		while (false !== $entry = $dir->read()) {
+			// Skip pointers
+			if ($entry == '.' || $entry == '..') { continue; }
+		
+			// Recurse
+			rezgo_upgrade_copy("$source/$entry", "$dest/$entry");
+		}
+		
+		// Clean up
+		$dir->close();
+		return true;
+	}
+	
+	function rezgo_upgrade_rm($dir) {
+		foreach(glob($dir . '/*') as $file) {
+			if(is_dir($file))
+				rezgo_upgrade_rm($file);
+			else
+				unlink($file);
+		}
+		rmdir($dir);
+	}
+	
+	function rezgo_upgrade_backup() {
+		
+		// make the core backup dir so we can copy directories into it
+		mkdir(sys_get_temp_dir().'/rezgo-wp-'.$_REQUEST['upgrade_id']);
+		
+		$dir = dir(dirname(__FILE__).'/templates/');
+		while (false !== $entry = $dir->read()) {
+			if ($entry == '.' || $entry == '..' || $entry == 'default') continue;
+			
+			$from = dirname(__FILE__).'/templates/'.$entry;
+			$to = sys_get_temp_dir().'/rezgo-wp-'.$_REQUEST['upgrade_id'].'/'.$entry;
+			rezgo_upgrade_copy($from, $to);
+		}
+	}
+
+	function rezgo_upgrade_restore() {
+	
+		$dir = dir(sys_get_temp_dir().'/rezgo-wp-'.$_REQUEST['upgrade_id']);
+		while (false !== $entry = $dir->read()) {
+			if ($entry == '.' || $entry == '..') continue;
+			
+			$from = sys_get_temp_dir().'/rezgo-wp-'.$_REQUEST['upgrade_id'].'/'.$entry;
+			$to = dirname(__FILE__).'/templates/'.$entry;
+			rezgo_upgrade_copy($from, $to);
+		}
+		
+		// remove the upgrade temp directory
+		rezgo_upgrade_rm(sys_get_temp_dir().'/rezgo-wp-'.$_REQUEST['upgrade_id']);
+	}
+	
+	add_filter('upgrader_pre_install', 'rezgo_upgrade_backup', 10, 2);
+	add_filter('upgrader_post_install', 'rezgo_upgrade_restore', 10, 2);
+	
 ?>
