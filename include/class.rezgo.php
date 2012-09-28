@@ -4,7 +4,7 @@
 		This is the Rezgo parser class, it handles processing for the Rezgo XML.
 		
 		VERSION:
-				1.6
+				1.6.1
 		
 		- Documentation and latest version
 				http://support.rezgo.com/developers/rezgo-open-source-php-parser.html
@@ -49,7 +49,7 @@
 
 	class RezgoSite {
 	
-		var $version = '1.6';
+		var $version = '1.6.1';
 	
 		var $xml_path;
 		
@@ -113,8 +113,9 @@
 		// this allows us to load the object globalls for included templates.
 		// ------------------------------------------------------------------------------
 		function __construct($secure=null) {
-			if(!$this->config('REZGO_SKIP_BUFFER')) ob_start();
-		
+			$handlers = ob_list_handlers();
+			if(count($handlers) < 1 && !$this->config('REZGO_SKIP_BUFFER')) ob_start();
+			
 			// check the config file to make sure it's loaded
 			if(!$this->config('REZGO_CID')) $this->error('REZGO_CID definition missing, check config file', 1);
 		
@@ -383,7 +384,7 @@
 			
 			$filename = ($fullpath) ? $req : $path.$req.$ext;
 			
-			if (is_file($filename)) {
+			if(is_file($filename)) {
         ob_start();
         include $filename;
         $contents = ob_get_contents();
@@ -474,7 +475,7 @@
 				$this->getPage($i.'&action=report');
 				
 				// send the user to the fatal error page
-				if(REZGO_FATAL_ERROR_PAGE) {
+				if($this->config(REZGO_FATAL_ERROR_PAGE)) {
 					$this->sendTo(REZGO_FATAL_ERROR_PAGE);
 				}
 			}
