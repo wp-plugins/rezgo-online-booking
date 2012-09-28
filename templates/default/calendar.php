@@ -104,10 +104,10 @@
 					</div>
 						
 					<script>
-						if(jQuery.browser.msie && jQuery.browser.version < 8) {
-	     				jQuery("#day_<?=$day->day?> a[rel]").overlay({closeOnClick: true});
+						if($.browser.msie && $.browser.version < 8) {
+	     				$("#day_<?=$day->day?> a[rel]").overlay({closeOnClick: true});
 	     			} else {
-	     				jQuery("#day_<?=$day->day?> a[rel]").overlay({effect: 'apple', closeOnClick: true});
+	     				$("#day_<?=$day->day?> a[rel]").overlay({effect: 'apple', closeOnClick: true});
 	     			}
 					</script>
 					

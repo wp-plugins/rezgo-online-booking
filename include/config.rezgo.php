@@ -35,8 +35,8 @@
 	define( "REZGO_USE_ABSOLUTE_PATH",	1																							);
 	
 	// identify the origin of all requests coming from this parser, this directive is optional
-	define( "REZGO_PARSER_IDENTITY",		'wp-1.6-'.site_url()													);
-		
+	define( "REZGO_PARSER_IDENTITY",		'wp-1.6.1-'.site_url()													);
+			
 	/* 
 		---------------------------------------------------------------------------
 			Error and debug handling 

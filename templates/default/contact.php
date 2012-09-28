@@ -74,14 +74,14 @@
 		</div>
 		
 		<script>
-			<? if($site->exists($captcha_error)) { ?>jQuery.scrollTo('#captcha_error');<? } ?>
+			<? if($site->exists($captcha_error)) { ?>$.scrollTo('#captcha_error');<? } ?>
 		
-			jQuery.tools.validator.localize("en", {
+			$.tools.validator.localize("en", {
 				'[required]' : 'required',
 				':email' : 'enter a valid email'
 			});
 		
-			jQuery("#contact").validator({ 
+			$("#contact").validator({ 
 				position: 'center left', 
 				offset: [-15, -70],
 				message: '<div id="rezgo_error"><em></em></div>' // em element is the arrow

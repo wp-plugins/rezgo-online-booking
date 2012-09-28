@@ -200,6 +200,55 @@
 				
 			</fieldset>
 		</div>
+		
+		<script type="text/javascript">
+		
+      jQuery(document).ready(function() {
+				
+				var tpl_text = {
+					\'default\':\'This is the default Rezgo template.\',
+					\'no-conflict\':\'Default with jQuery in <em>noConflict</em> mode.\',
+					\'custom\':\'This is a custom template.\'
+				};		
+		
+		';
+		
+		if(get_option('rezgo_template') == 'default' || get_option('rezgo_template') == 'no-conflict') {
+			
+			echo 'jQuery(\'#template_description\').html(tpl_text[\''.get_option('rezgo_template').'\']);';
+			
+		} else {
+			
+			echo '
+				jQuery(\'#template_description\').html(tpl_text[\'custom\']);
+				jQuery(\'#tpl_custom\').html(ucwords(\''.get_option('rezgo_template').'\'));			
+			';
+			
+		}
+		
+		echo '
+        jQuery(\'#template_select\').change(function() {
+					
+          var tpl = jQuery(this).attr(\'value\');
+
+					switch (tpl) {
+						case \'default\':
+							jQuery(\'#template_description\').html(tpl_text[\'default\']);
+							break;
+						case \'no-conflict\':
+							jQuery(\'#template_description\').html(tpl_text[\'no-conflict\']);
+							break;
+						default:
+							jQuery(\'#template_description\').html(tpl_text[\'custom\']);
+							jQuery(\'#tpl_custom\').html(ucwords(tpl));
+							break;			
+					}
+					
+        });		
+    
+      });
+    </script>
+		
 		<div class="field_frame">
 			<fieldset>
 				<legend class="general_settings">General Settings</legend>
@@ -232,7 +281,7 @@
 					<dt>Template:</dt>
 					<dd>
 						
-						<select name="rezgo_template">';
+						<select name="rezgo_template" id="template_select">';
 							$handle = opendir('../wp-content/plugins/rezgo-online-booking/templates');
 							while (false !== ($file = readdir($handle))) {
 					        if ($file != "." && $file != "..") {
@@ -242,6 +291,7 @@
 					    }
 					    closedir($handle);	
 						echo '</select>
+						<div id="template_description"></div>
 					</dd>
 					
 					<dt class=note>If you do not have your own security certificate, you can forward users to the Rezgo white-label for booking (we recommend this).</dt>

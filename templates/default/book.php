@@ -1,5 +1,6 @@
 <script type="text/javascript" src="<?=$site->path?>/javascript/jquery.scrollTo.min.js"></script>
 <script type="text/javascript" src="<?=$site->path?>/javascript/jquery.form.js"></script>
+<script type="text/javascript" src="<?=$site->path?>/javascript/jquery.selectboxes.pack.js"></script>
 
 <div id="rezgo" class="wrp_book">
 
@@ -38,17 +39,17 @@
 				
 				if(!elements[id]) {
 					var content = '<li class="info" id="element_' + id + '"><label class="extra">' + name + '</label><span class="extra price_neg" id="val_' + id + '">' + display_price + '</span></li>';
-					jQuery("#fee_box").html( jQuery("#fee_box").html() + content );
+					$("#fee_box").html( $("#fee_box").html() + content );
 				} else {
 					if(document.getElementById('element_' + id).style.display == 'none') document.getElementById('element_' + id).style.display = '';
-					jQuery("#val_" + id).html(display_price);
+					$("#val_" + id).html(display_price);
 				}	
 				elements[id] = price;
 				
 				// add to total amount
 				total = parseFloat(total) + add_price;
 				total = total.toFixed(<?=$item->currency_decimals?>);
-				jQuery("#total_value").html('<?=$item->currency_symbol?>' + total);
+				$("#total_value").html('<?=$item->currency_symbol?>' + total);
 			
 				// if total is greater than 0 then appear payment section
 				if(total > 0) document.getElementById('payment_info').style.display = '';
@@ -75,7 +76,7 @@
 				// sub from total amount
 				total = parseFloat(total) - sub_price;
 				total = total.toFixed(<?=$item->currency_decimals?>);
-				jQuery("#total_value").html('<?=$item->currency_symbol?>' + total);
+				$("#total_value").html('<?=$item->currency_symbol?>' + total);
 			
 				// if total is less than 0 then disappear payment section
 				if(total <= 0) document.getElementById('payment_info').style.display = 'none';
@@ -387,8 +388,8 @@
 	    <li class="half"><label for="address2">Address 2</label><input id="tour_address_2" name="tour_address_2" type="text" value="" /></li>
 	    
 	    <li class="half"><label for="city">City<em>*</em></label><input id="tour_city" name="tour_city" type="text" value="" /></li>
-	    <li class="half"><label for="states">State/Province</label><input id="tour_stateprov" name="tour_stateprov" type="text" value="" /></li>
-	    
+	    <li class="half"><label for="postal">Zip/Postal Code<em>*</em></label><input id="tour_postal_code" name="tour_postal_code" type="text" value="" /></li>      
+
 	    <li class="half"><label for="country">Country<em>*</em></label>
 	    	<? $companyCountry = $site->getCompanyCountry(); ?>
 				<select name="tour_country" id="tour_country" />
@@ -397,8 +398,11 @@
 	    		<? endforeach; ?>
 	    	</select>
 	    </li>
-	    <li class="half"><label for="postal">Zip/Postal Code<em>*</em></label><input id="tour_postal_code" name="tour_postal_code" type="text" value="" /></li>
-			
+
+	    <li class="half"><label for="states">State/Province</label>
+      <select id="tour_stateprov" style="display:<?=(($companyCountry != 'ca' && $companyCountry != 'us' && $companyCountry != 'au') ? 'none' : '')?>;"></select>
+      <input id="tour_stateprov_txt" name="tour_stateprov" type="text" value="" style="display:<?=(($companyCountry != 'ca' && $companyCountry != 'us' && $companyCountry != 'au') ? '' : 'none')?>;" />
+      </li>			
 			<li class="half"><label for="phone">Phone Number<em>*</em></label><input id="tour_phone_number" name="tour_phone_number" type="text" value="" /></li>
 	    <li class="half"><label for="email">Email Address<em>*</em></label><input id="tour_email_address" name="tour_email_address" type="email" value="" /></li>
 	    </ol>
@@ -430,9 +434,9 @@
 										echo '</label>
 										<input type="hidden" name="tour_card_token" id="tour_card_token" value="">
 										<script>
-											jQuery(\'#tour_card_token\').val(\'\');
+											$(\'#tour_card_token\').val(\'\');
 											setTimeout(function() {
-												jQuery(\'#payment_method_credit\').attr(\'checked\', true);
+												$(\'#payment_method_credit\').attr(\'checked\', true);
 											}, 600);
 										</script>
 										</td></tr>';
@@ -543,13 +547,54 @@
 	var response; // needs to be global to work in timeout
 	var paypalAccount = 0;
 
-	jQuery.tools.validator.localize("en", {
+	$.tools.validator.localize("en", {
 		'[required]' : 'required',
 		':email' : 'enter a valid email'
 	});
 	
+	var ca_states = <?= json_encode( $site->getRegionList('ca') ); ?>;
+	var us_states = <?= json_encode( $site->getRegionList('us') ); ?>;
+	var au_states = <?= json_encode( $site->getRegionList('au') ); ?>;	
+	
+	$('#tour_country').change(function() {
+		var country = $(this).attr('value');
+		$('#tour_stateprov').removeOption(/.*/);
+		switch (country) {
+			case 'ca':
+				$('#tour_stateprov_txt').hide();
+				$('#tour_stateprov').addOption(ca_states, false).show();
+				$('#tour_stateprov_txt').val($('#tour_stateprov').val());
+				break;
+			case 'us':
+				$('#tour_stateprov_txt').hide();
+				$('#tour_stateprov').addOption(us_states, false).show();
+				$('#tour_stateprov_txt').val($('#tour_stateprov').val());
+				break;
+			case 'au':
+				$('#tour_stateprov_txt').hide();
+				$('#tour_stateprov').addOption(au_states, false).show();
+				$('#tour_stateprov_txt').val($('#tour_stateprov').val());
+				break;		
+			default:
+				$('#tour_stateprov').hide();
+				$('#tour_stateprov_txt').val('');
+				$('#tour_stateprov_txt').show();
+				break;			
+		}
+	});
+	
+	$('#tour_stateprov').change(function() {
+		var state = $(this).attr('value');
+		$('#tour_stateprov_txt').val(state);
+	});		
+	
+	<? if (in_array($site->getCompanyCountry(), array('ca', 'us', 'au'))) { ?>
+		$('#tour_stateprov').addOption(<?=$site->getCompanyCountry();?>_states, false);
+		$('#tour_stateprov_txt').val($('#tour_stateprov').val());
+	<? } ?>
+	
 	function close_modal() {
-		jQuery('#prompt').data("overlay").close();
+		$('#prompt').data("overlay").close();
 	}
 	
 	// change the modal dialog box or pass the user to the receipt depending on the response
@@ -583,7 +628,7 @@
 			}
 		}
 		
-		jQuery('#prompt').html(body);
+		$('#prompt').html(body);
 	}
 	
 	// this function delays the output so we see the loading graphic
@@ -593,7 +638,7 @@
 	}
 	
 	function start_validate() {
-		jQuery("#book").validator({ 
+		$("#book").validator({ 
 			position: 'center left', 
 			offset: [-15, -70],
 			message: '<div id="rezgo_error"><em></em></div>' // em element is the arrow
@@ -604,35 +649,35 @@
 			
 				var force_error = 0;
 				
-				var payment_method = jQuery('input:radio[name=payment_method]:checked').val();				
+				var payment_method = $('input:radio[name=payment_method]:checked').val();				
 				
 				if(payment_method == 'Credit Cards') {
-					if(!jQuery('#tour_payment').contents().find('#name').val() || !jQuery('#tour_payment').contents().find('#pan').val()) {
+					if(!$('#tour_payment').contents().find('#name').val() || !$('#tour_payment').contents().find('#pan').val()) {
 						force_error = 1;
-						jQuery('#tour_payment').contents().find('#payment_info').css('border-color', '#990000');
+						$('#tour_payment').contents().find('#payment_info').css('border-color', '#990000');
 					}
 				} else {
 					// other payment methods need their additional fiends filled
-					var id = jQuery('input:radio[name=payment_method]:checked').attr('id');
-					if(jQuery('#' + id + '_field').length != 0 && !jQuery('#' + id + '_field').val()) { // this payment method has additional data that is empty
+					var id = $('input:radio[name=payment_method]:checked').attr('id');
+					if($('#' + id + '_field').length != 0 && !$('#' + id + '_field').val()) { // this payment method has additional data that is empty
 						force_error = 1;
-						jQuery('#' + id + '_container').css('border-color', '#990000');
+						$('#' + id + '_container').css('border-color', '#990000');
 					}
 				}
 			}
 			
 			// when data is invalid 
 			if(e.isDefaultPrevented() || force_error) {
-				jQuery('#errors').fadeIn();
-			  jQuery.scrollTo('#errors');
-			  setTimeout("jQuery('#errors').fadeOut();", 4000);
+				$('#errors').fadeIn();
+			  $.scrollTo('#errors');
+			  setTimeout("$('#errors').fadeOut();", 4000);
 			  return false;
 			} else {
 				if(toComplete == 1) {
 					
-					jQuery('#prompt').html('<h2>Your booking is being completed</h2><br><center><img src="<?=$site->path?>/images/booking_load.gif"><br><br>Please wait a moment...</center>');
+					$('#prompt').html('<h2>Your booking is being completed</h2><br><center><img src="<?=$site->path?>/images/booking_load.gif"><br><br>Please wait a moment...</center>');
 				
-					jQuery('#prompt').overlay({
+					$('#prompt').overlay({
 						mask: {
 							color: '#FFFFFF',
 							loadSpeed: 200,
@@ -644,24 +689,24 @@
 					
 					// open the overlay this way, rather than load:true in the overlay itself
 					// so that it will be forced to open again even if it already exists
-					jQuery('#prompt').data("overlay").load();
+					$('#prompt').data("overlay").load();
 					
 					// set the action to book, in case paypal changed it to get it's payment token
-					jQuery('#rezgoAction').val('book'); 
+					$('#rezgoAction').val('book'); 
 					
-					var payment_method = jQuery('input:radio[name=payment_method]:checked').val();
+					var payment_method = $('input:radio[name=payment_method]:checked').val();
 					
 					if(payment_method == 'Credit Cards' && total != 0) {
 						// clear the existing credit card token, just in case one has been set from a previous attempt
-						jQuery('#tour_card_token').val('');
+						$('#tour_card_token').val('');
 						
 						// submit the card token request and wait for a response
-						jQuery('#tour_payment').contents().find('#payment').submit();
+						$('#tour_payment').contents().find('#payment').submit();
 						
 						// wait until the card token is set before continuing (with throttling)
 						
 						function check_card_token() {
-							var card_token = jQuery('#tour_card_token').val();
+							var card_token = $('#tour_card_token').val();
 							if(card_token == '') {
 								// card token has not been set yet, wait and try again
 								setTimeout(function() {
@@ -670,7 +715,7 @@
 							} else {
 								
 								// the field is present? submit normally								
-								jQuery('#book').ajaxSubmit({ success: delay_response });
+								$('#book').ajaxSubmit({ success: delay_response });
 								
 							}
 						}
@@ -679,7 +724,7 @@
 					} else {
 											
 						// not a credit card payment (or $0) and everything checked out, submit via ajaxSubmit (jquery.form.js)					
-						jQuery('#book').ajaxSubmit({ success: delay_response });
+						$('#book').ajaxSubmit({ success: delay_response });
 
 	 				}
 					
@@ -689,15 +734,15 @@
 				} else {
 					toComplete = 1;
 				
-					jQuery('#errors').fadeOut();
+					$('#errors').fadeOut();
 				
 					document.getElementById("step_1").setAttribute("class", "off");
 					document.getElementById("step_2").setAttribute("class", "on");
 					
-					jQuery('#content_1').hide();
-					jQuery('#content_2').fadeIn();
+					$('#content_1').hide();
+					$('#content_2').fadeIn();
 					
-					jQuery.scrollTo('#panel_full');
+					$.scrollTo('#panel_full');
 					
 					document.getElementById("tour_first_name").setAttribute("required", "required");
 					document.getElementById("tour_last_name").setAttribute("required", "required");
@@ -723,13 +768,13 @@
 	
 	function stepForward() {
 		start_validate();
-		jQuery('#book').submit();
+		$('#book').submit();
 	}
 	
 	function stepBack() {
 		toComplete = 0;
 	
-		jQuery('#errors').fadeOut();
+		$('#errors').fadeOut();
 	
 		document.getElementById("step_1").setAttribute("class", "on");
 		document.getElementById("step_2").setAttribute("class", "off");
@@ -750,14 +795,14 @@
 		<? if($site->getPaymentMethods('PayPal')) { ?>
 			paypalAccount = 0; // set to 0 to let the page know we need an account
 		
-			jQuery('#payment_paypal').fadeOut();
-			jQuery('#payment_method_paypal').attr('checked', false);
+			$('#payment_paypal').fadeOut();
+			$('#payment_method_paypal').attr('checked', false);
 			<? if(!$site->exists($site->getCompanyPaypal())) { ?>
-			jQuery('#payment_paypal').html('<br><br><img src="<?=$site->path?>/images/booking_load.gif">');
+			$('#payment_paypal').html('<br><br><img src="<?=$site->path?>/images/booking_load.gif">');
 			<? } ?>
 			
-			jQuery('#paypal_token').val('');
-			jQuery('#paypal_payer_id').val('');		
+			$('#paypal_token').val('');
+			$('#paypal_payer_id').val('');		
 		<? } ?>
 		
 		<? if($site->getPaymentMethods('Credit Cards')) { ?>
@@ -767,45 +812,45 @@
 		
 		start_validate();
 		
-		jQuery('#content_2').hide();
-		jQuery('#content_1').fadeIn();
+		$('#content_2').hide();
+		$('#content_1').fadeIn();
 	}
 	
 	function toggleCard() {
-		if(jQuery('input[name=payment_method]:checked').val() == 'Credit Cards') {
+		if($('input[name=payment_method]:checked').val() == 'Credit Cards') {
 			<? $pmn = 0; ?>
 			<? foreach( $site->getPaymentMethods() as $pay ) { ?>	
 				<? if($pay[name] == 'Credit Cards') { ?>
 				<? } elseif($pay[name] == 'PayPal' && !$site->exists($site->getCompanyPaypal())) { ?>
-					jQuery('#payment_paypal').fadeOut();
+					$('#payment_paypal').fadeOut();
 				<? } else { ?>
 					<? $pmn++; ?>
-					jQuery('#payment_method_<?=$pmn?>_box').fadeOut();
-					jQuery('#payment_method_<?=$pmn?>_field').attr('disabled', 'disabled');
+					$('#payment_method_<?=$pmn?>_box').fadeOut();
+					$('#payment_method_<?=$pmn?>_field').attr('disabled', 'disabled');
 				<? } ?>
 			<? } ?>	
 			
 			setTimeout(function() {
-				jQuery('#payment_cards').fadeIn();
+				$('#payment_cards').fadeIn();
 			}, 450);
 			
 			document.getElementById("terms_other").style.display = 'none';
 			document.getElementById("terms_credit_card").style.display = '';			
-		} else if(jQuery('input[name=payment_method]:checked').val() == 'PayPal') {
+		} else if($('input[name=payment_method]:checked').val() == 'PayPal') {
 			<? $pmn = 0; ?>
 			<? foreach( $site->getPaymentMethods() as $pay ) { ?>	
 				<? if($pay[name] == 'Credit Cards') { ?>
-					jQuery('#payment_cards').fadeOut();
+					$('#payment_cards').fadeOut();
 				<? } elseif($pay[name] == 'PayPal' && !$site->exists($site->getCompanyPaypal())) { ?>
 				<? } else { ?>
 					<? $pmn++; ?>
-					jQuery('#payment_method_<?=$pmn?>_box').fadeOut();
-					jQuery('#payment_method_<?=$pmn?>_field').attr('disabled', 'disabled');
+					$('#payment_method_<?=$pmn?>_box').fadeOut();
+					$('#payment_method_<?=$pmn?>_field').attr('disabled', 'disabled');
 				<? } ?>
 			<? } ?>	
 			
 			setTimeout(function() {
-				jQuery('#payment_paypal').fadeIn();
+				$('#payment_paypal').fadeIn();
 			}, 450);
 			
 			document.getElementById("terms_credit_card").style.display = 'none';
@@ -815,20 +860,20 @@
 			<? $pmn = 0; ?>
 			<? foreach( $site->getPaymentMethods() as $pay ) { ?>	
 				<? if($pay[name] == 'Credit Cards') { ?>
-					jQuery('#payment_cards').fadeOut();
+					$('#payment_cards').fadeOut();
 				<? } elseif($pay[name] == 'PayPal' && !$site->exists($site->getCompanyPaypal())) { ?>
-					jQuery('#payment_paypal').fadeOut();
+					$('#payment_paypal').fadeOut();
 				<? } else { ?>
 					<? $pmn++; ?>
-					jQuery('#payment_method_<?=$pmn?>_box').fadeOut();
-					jQuery('#payment_method_<?=$pmn?>_field').attr('disabled', 'disabled');
+					$('#payment_method_<?=$pmn?>_box').fadeOut();
+					$('#payment_method_<?=$pmn?>_field').attr('disabled', 'disabled');
 				<? } ?>
 			<? } ?>	
 			
 			setTimeout(function() {
-				var id = jQuery('input[name=payment_method]:checked').attr('id');
-				jQuery('#' + id + '_box').fadeIn();
-				jQuery('#' + id + '_field').attr('disabled', '');
+				var id = $('input[name=payment_method]:checked').attr('id');
+				$('#' + id + '_box').fadeIn();
+				$('#' + id + '_field').attr('disabled', '');
 			}, 450);
 			
 			document.getElementById("terms_credit_card").style.display = 'none';
@@ -849,11 +894,11 @@
 			return false;
 		}
 		
-		jQuery('#rezgoAction').val('get_paypal_token');
+		$('#rezgoAction').val('get_paypal_token');
 		
-		jQuery('#book').ajaxSubmit({
+		$('#book').ajaxSubmit({
 			success: function(token) {
-				jQuery('#payment_paypal').fadeOut();
+				$('#payment_paypal').fadeOut();
 				
 				// this section is mostly for debug handling
 				if(token.indexOf('STOP::') != -1) {
@@ -879,7 +924,7 @@
 	function paypalCancel() {
 		// the paypal transaction was cancelled, uncheck the radio and close the box
 		dg.closeFlow();
-		jQuery('#payment_method_paypal').attr('checked', false);
+		$('#payment_method_paypal').attr('checked', false);
 	}
 	
 	function paypalConfirm(token, payerid, name, email) {
@@ -895,23 +940,23 @@
 			paypalAccount = 1; // set to 1 to let the page know we have an account on file
 		}
 			
-		jQuery('#payment_paypal').html(string);
-		jQuery('#payment_paypal').fadeIn();
+		$('#payment_paypal').html(string);
+		$('#payment_paypal').fadeIn();
 		
-		jQuery('#paypal_token').val(token);
-		jQuery('#paypal_payer_id').val(payerid);
+		$('#paypal_token').val(token);
+		$('#paypal_payer_id').val(payerid);
 	}
 	
 	function creditConfirm(token) {
 		// the credit card transaction was completed, give us the token
-		jQuery('#tour_card_token').val(token);
+		$('#tour_card_token').val(token);
 	}
 	
 	// this function checks through each element on the form, if that element is
 	// a checkbox and has a price value and is checked (thanks to browser form retention)
 	// then we go ahead and add that to the total like it was clicked
 	function saveForm(form) {
-	  jQuery(':input', form).each(function() {
+	  $(':input', form).each(function() {
 	    if (this.type == 'checkbox' && this.checked == true) {
 	    	var split = this.id.split("|");
 	    	// if the ID contains a price value then add it
