@@ -1,19 +1,23 @@
 <!--right side -->
 <div id="right_panel">
-
-	<? if($site->exists($site->getTriggerState())) { ?>
+	
+	<? if($site->getCartState()) { ?>
+		<?=$site->getTemplate('sidebar_order')?>
+	<? } ?>
+	
+	<? if($site->getTriggerState()) { ?>
 		<div id="promo">
 			<h1>Have a promotional code?</h1>
-			<? if($_COOKIE['rezgo_promo']) { ?>
+			<? if($_SESSION['rezgo_promo']) { ?>
 			<div id="promo_entered_sidebar" class="promo_entered_sidebar">
-				<?=$_COOKIE['rezgo_promo']?>
+				<?=$_SESSION['rezgo_promo']?>
 				<a href="javascript:void(0);" onclick="$('#promo_entered_sidebar').hide(); $('#promo_hidden_sidebar').fadeIn();">[change]</a>
 			</div>
 			<? } ?>
 			
-			<div id="promo_hidden_sidebar" class="promo_hidden_sidebar" <? if($_COOKIE['rezgo_promo']) { ?>style="display:none;"<? } ?>>
-				<form class="item" onsubmit="document.location.href = '<?=$_SERVER['REQUEST_URI']?><?=((strpos($_SERVER['REQUEST_URI'], '?') !== false) ? '&' : '?')?>promo=' + $('#promo_sidebar').val() + '<? if($_REQUEST[date]) { ?>#book<? } ?>'; return false;">
-		  		<input type="text" class="promo_input_sidebar" name="promo" id="promo_sidebar" value="<?=$_COOKIE['rezgo_promo']?>">
+			<div id="promo_hidden_sidebar" class="promo_hidden_sidebar" <? if($_SESSION['rezgo_promo']) { ?>style="display:none;"<? } ?>>
+				<form class="item" onsubmit="document.location.href = '<?=$_SERVER['REQUEST_URI']?><?=((strpos($_SERVER['REQUEST_URI'], '?') !== false) ? '&' : '?')?>promo=' + $('#promo_sidebar').val(); return false;">
+		  		<input type="text" class="promo_input_sidebar" name="promo" id="promo_sidebar" value="<?=$_SESSION['rezgo_promo']?>">
 					<input type="submit" class="promo_submit_sidebar" value="apply">
 				</form>
 			</div>
@@ -81,7 +85,7 @@
 				}
 			}	
 			
-			change_cal('item_id=<?=$item->uid?>&date=<?=$_REQUEST['date']?>');
+			change_cal('item_id=<?=$item->uid?>&date=<?=$_REQUEST['date']?>');	
 		
 			$('#calendar_marker').delay(800).fadeIn();
 		</script>
@@ -163,4 +167,7 @@
 	</div>
 <? } ?>
 
+<!-- Rezgo logo DO NOT DELETE -->
+<div id="rezgo_logo"><a href="http://www.rezgo.com" target="_blank" title="powered by rezgo">powered by<img src="<?=$site->path?>/images/logo_rezgo.gif" border="0" alt="Rezgo" /></a></div>
+<!-- Rezgo logo DO NOT DELETE -->
 </div><!--end rezgo wrp-->

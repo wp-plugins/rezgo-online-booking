@@ -9,14 +9,13 @@
 <html>
 <head>
 
-<!--[if lte IE 6]><script src="<?=$this->path?>/javascript/ie6/warning.js"></script><script>window.onload=function(){e("<?=$this->path?>/javascript/ie6/")}</script><![endif]-->
-
 <link media="all" href="<?=$this->path?>/header.css" type="text/css" rel="stylesheet">
 <!--[if lte IE 7]>
 <link rel="stylesheet" type="text/css" href="<?=$this->path?>/header_ie.css" />
 <![endif]-->
 
-<script type="text/javascript" src="<?=$this->path?>/javascript/jquery.tools.min.js"></script>
+<script type="text/javascript" src="<?=$site->path?>/javascript/jquery.tools.min.js"></script>
+<script type="text/javascript" src="<?=$site->path?>/javascript/jquery.validate.min.js"></script>
 
 <? if($site->exists($site->getStyles())) { ?>
 <style>
@@ -30,22 +29,31 @@
 
 </head>
 <body style="margin:0px; padding:0px; background:#ffffff;">
-
+	
+	<script>
+		function check_valid() {
+		
+			var valid = $("#payment").valid();
+			
+			return valid;
+		}
+	</script>
+	
 	<form method="post" id="payment" action="https://process.rezgo.com/form">
 	
 	<input type="hidden" name="return" value="https://<?=$_SERVER['HTTP_HOST'].REZGO_URL_BASE?>/booking_payment.php?rezgoAction=return&">
 	
 	<div id="rezgo" style="width:310px; margin:0px; padding:0px; border-radius:0px; background:#FFF;">
 	
-	<div class="payment_info" id="payment_info" style="margin:0px; width:100%; padding:5px;">
+	<div class="payment_info" id="payment_card_info" style="margin:0px; width:100%; padding:5px;">
 					
-		<div id="payment_cards">
+		<div id="payment_card_content">
 			<ol>
 				
-				<li><label class="left" style="width:45%;">Cardholder Name<em></em></label><input type="text" id="name" name="name" value="" /></li>
-				<li><label class="left" style="width:45%;">Card Number<em></em></label><input type="text" id="pan" name="pan" value="" /></li>
+				<li><label class="left">Cardholder Name<em></em></label><input type="text" id="name" name="name" value="" style="width:150px;" required="required" /></li>
+				<li><label class="left">Card Number<em></em></label><input type="text" id="pan" name="pan" value="" style="width:150px;" required="required" /></li>
 				<li>
-					<label class="left" style="width:45%;">Card Expiry<em></em></label>
+					<label class="left">Card Expiry<em></em></label>
 					<select name="exp_month" id="exp_month" style="position:relative; top:-5px;">
 						<option value="01">01</option>
 						<option value="02">02</option>
@@ -68,7 +76,7 @@
 				</li>
 		
 				<? if($site->getCVV()) { ?>
-				<li><label class="left" style="width:45%;">CVV Number<em></em></label><input type="text" name="cvv" id="cvv" value="" style="width:50px;" />&nbsp;<a href="javascript:void(0);" onclick="javascript:window.open('<?=$site->path?>/images/cv_card.jpg',null,'width=600,height=300,status=no,toolbar=no,menubar=no,location=no');">what is this ?</a></li>
+				<li><label class="left" style="width:45%;">CVV Number<em></em></label><input type="text" name="cvv" id="cvv" value="" style="width:50px;"  required="required" />&nbsp;<a href="javascript:void(0);" onclick="javascript:window.open('<?=$site->path?>/images/cv_card.jpg',null,'width=600,height=300,status=no,toolbar=no,menubar=no,location=no');">what is this ?</a></li>
 				<? } ?>
 			</ol>
 			

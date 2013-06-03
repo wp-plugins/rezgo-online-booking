@@ -1,7 +1,7 @@
 <div id="rezgo" class="wrp_list">
 
-<link rel="stylesheet" href="<?=$site->path?>/javascript/prettyPhoto/prettyPhoto.css" type="text/css" media="screen" title="prettyPhoto main stylesheet" charset="utf-8" />
-<script type="text/javascript" src="<?=$site->path?>/javascript/prettyPhoto/jquery.prettyPhoto.js"></script>
+<link rel="stylesheet" href="<?=$site->path?>/javascript/prettyPhoto/prettyPhoto.css?541" type="text/css" media="screen" title="prettyPhoto main stylesheet" charset="utf-8" />
+<script type="text/javascript" src="<?=$site->path?>/javascript/prettyPhoto/jquery.prettyPhoto.js?541"></script>
 
 <script type="text/javascript">
 	$(document).ready(function() {
@@ -11,7 +11,7 @@
 		// initialize scrollable
 		$(".scrollable").scrollable();
 		
-		$(".items a[rel]").prettyPhoto({theme:'facebook'});
+		$(".items a[rel]").prettyPhoto({theme:'facebook', social_tools:''});
 	});
 </script>
 
@@ -192,9 +192,16 @@
 						}
 					</script>
 		   		
-			   	<form id="checkout_box" action="<?=$site->base?>/book">
-						<input type="hidden" name="uid" value="<?=$_REQUEST['option']?>">
-						<input type="hidden" name="date" value="<?=$_REQUEST['date']?>">
+			   	<form id="checkout_box" action="<?=$site->base?>/<?=(($site->getCartState()) ? 'order' : 'book')?>">
+						<input type="hidden" name="add[0][uid]" value="<?=$_REQUEST['option']?>">
+						<input type="hidden" name="add[0][date]" value="<?=$_REQUEST['date']?>">
+						
+						<? 
+							// for no-cart requests, we want to make sure we clear the cart
+							if(!$site->getCartState()) {
+						?>
+							<input type="hidden" name="order" value="clear">
+						<? } ?>
 						
 						<? if($_COOKIE['rezgo_promo']) { ?><input type="hidden" name="promo" value="<?=$_COOKIE['rezgo_promo']?>"><? } ?>
 						<? if($_COOKIE['rezgo_refid_val']) { ?><input type="hidden" name="refid" value="<?=$_COOKIE['rezgo_refid_val']?>"><? } ?>
@@ -205,7 +212,7 @@
 						
 			   			<ul class="checkout_box">
 			   				<li class="price_op"><?=$price->label?><?=(($price->required && $site->getTourRequired()) ? '<em>*</em>' : '')?></li>
-			   				<li class="quantity"><input type="text" name="<?=$price->name?>_num" id="<?=$price->name?>" size="3" /> X</li>
+			   				<li class="quantity"><input type="text" name="add[0][<?=$price->name?>_num]" value="<?=$_REQUEST[$price->name.'_num']?>" id="<?=$price->name?>" size="3" /> X</li>
 			   				<li class="price">
 			   					<? if($site->exists($price->base)) { ?><span><?=$site->formatCurrency($price->base)?></span><? } ?>
 			   					<?=$site->formatCurrency($price->price)?>
@@ -221,7 +228,7 @@
 			   			<span class="memo">At least <?=$item->per?> people are required to book.</span>
 			   		<? } ?>
 			    
-			    	<span class="checkout_book"><input type="submit" value="<?=$site->getBookNow()?>" class="checkout_book" onclick="return check();"></span>
+			    	<span class="checkout_book"><input type="submit" value="<?=(($site->getCartState()) ? 'Add to Order' : 'Book Now')?>" class="checkout_book" onclick="return check();"></span>
 						
 						<div class="error_box">
 							<div id="error_text" class="error_text">
@@ -235,25 +242,24 @@
 					<span class="no_availability">Sorry, there is no availability left for this option</span>
 				<? } ?>
 
-				<? if($site->exists($site->getTriggerState())) { ?>
-					<? if($_COOKIE['rezgo_promo']) { ?>
+				<? if($site->getTriggerState()) { ?>
+					<? if($_SESSION['rezgo_promo']) { ?>
 					<div id="promo_entered" class="promo_entered">
 						<span class="promocode">Promo:
-							<?=$_COOKIE['rezgo_promo']?>
+							<?=$_SESSION['rezgo_promo']?>
 							<a href="javascript:void(0);" onclick="$('#promo_entered').hide(); $('#promo_hidden').fadeIn();">[change]</a>
 						</span>
 					</div>
 					<? } ?>
 					
-					<div id="promo_hidden" class="promo_hidden" <? if($_COOKIE['rezgo_promo']) { ?>style="display:none;"<? } ?>>
+					<div id="promo_hidden" class="promo_hidden" <? if($_SESSION['rezgo_promo']) { ?>style="display:none;"<? } ?>>
 						<form onsubmit="document.location.href = '<?=$_SERVER['REQUEST_URI']?><?=((strpos($_SERVER['REQUEST_URI'], '?') !== false) ? '&' : '?')?>promo=' + $('#promo').val(); return false;">
 				  		<span class="promocode">Promo:
-				  			<input type="text" class="promo_input" name="promo" id="promo" value="<?=$_COOKIE['rezgo_promo']?>">
+				  			<input type="text" class="promo_input" name="promo" id="promo" value="<?=$_SESSION['rezgo_promo']?>">
 								<input type="submit" class="promo_submit" value="apply">
 							</span>
 						</form>
 					</div>
-					
 				<? } ?>
 				
 				<? if(count($site->getTours('t=com&q='.$_REQUEST['com'].'&d='.$_REQUEST['date'])) > 1) { ?>
@@ -304,9 +310,6 @@
   <a href="javascript:void(0);" id="social_url" onclick="if($('#short_url').css('display') == 'none') { $('#short_url').fadeIn(); $('#short_url_result').load('<?=$site->base?>/shorturl_ajax.php?url=' + escape(document.location.href), function() { $('#short_url_text').val( $('#short_url_result').html() ); document.getElementById('short_url_text').focus(); document.getElementById('short_url_text').select(); }); } else { $('#short_url').fadeOut(); }"><img src="<?=$site->path?>/images/icon_shorten.png" title="Get Short URL" /></a>
   <a href="javascript:void(0);" id="social_facebook" onclick="window.open('http://www.facebook.com/sharer.php?u=' + escape(document.location.href) + '&t=<?=urlencode($item->name)?>','facebook','location=1,status=1,scrollbars=1,width=600,height=400');"><img src="<?=$site->path?>/images/icon_fb.png" title="Share on Facebook"  alt="Share on Facebook" /></a>
   <a href="javascript:void(0);" id="social_twitter" onclick="window.open('http://twitter.com/share?text=<?=urlencode('I found this great thing to do! "'.$item->name.'"')?>&url=' + escape(document.location.href)<? if($site->exists($site->getTwitterName())) { ?> + '&via=<?=$site->getTwitterName()?>'<? } ?>,'tweet','location=1,status=1,scrollbars=1,width=500,height=350');"><img src="<?=$site->path?>/images/icon_twitter.png" title="Share on Twitter" /></a>	
- 	<a href="javascript:void(0);" id="social_tripit" onclick="window.open('http://www.tripit.com/trip_item/createBookmark?url=' + escape(document.location.href) + '&display_name=<?=urlencode($item->name)?>','tripit','location=1,status=1,scrollbars=1,width=970,height=500');"><img src="<?=$site->path?>/images/icon_tripit.png" title="Add to TripIt Clipper" /></a>
-  <a href="javascript:(function(){var%20w=window,l=w.location,d=w.document,s=d.createElement('script'),e=encodeURIComponent,x='undefined',u='http://static.travelmuse.com/assets/scripts/bm/tmbm3',b='http://www.travelmuse.com';function%20g(){if(d.readyState&&d.readyState!='complete'){setTimeout(g,200);}else{if(typeof%20TMBM==x)s.setAttribute('src',u+'.js?loc='+e(l)),d.body.appendChild(s);function%20f(){(typeof%20TMBM==x)?setTimeout(f,200):TMBM.init(b,l.href,d.title,false);}f();}}g();}());" id="social_travelmuse"><img src="<?=$site->path?>/images/icon_travel_muse.png" title="Add to Travelmuse" /></a>
-  <a href="javascript:void(0);" id="social_duffelup" onclick="javascript: (function(){EN_CLIP_HOST='http://duffelup.com';CLIP_URL=escape(document.location.href);CLIP_TITLE='<?=urlencode($item->name)?>';CLIP_NOTES='';CLIP_ADDRESS='';CLIP_PHONE='';CLIP_TYPE=''; PID='rezgo'; var a=document.createElement('SCRIPT');a.type='text/javascript';a.src=EN_CLIP_HOST+'/javascripts/bookmarklet.js?'+(new Date).getTime()/1E5;document.getElementsByTagName('head')[0].appendChild(a)})(); return false;" title="Clip to Duffel"><img src="<?=$site->path?>/images/icon_duffelup.png" title="Add to Duffelup" /></a>
 </div>
 
 <div id="short_url_box">

@@ -4,7 +4,7 @@
 		Plugin Name: Rezgo Online Booking
 		Plugin URI: http://wordpress.org/extend/plugins/rezgo-online-booking/
 		Description: Connect WordPress to your Rezgo account and accept online bookings directly on your website.
-		Version: 1.6.1
+		Version: 1.7
 		Author: Rezgo
 		Author URI: http://www.rezgo.com
 		License: Modified BSD
@@ -89,6 +89,18 @@
 			'(.+?)/supplier/([^\/]*)/?$'
 			=> 'index.php?pagename=$matches[1]&cid=$matches[2]',			
 			
+			// order search (vendor only)
+			'(.+?)/supplier/([^\/]*)/?$'
+			=> 'index.php?pagename=$matches[1]&cid=$matches[2]',			
+			
+			// order page
+			'(.+?)/order(.php)?/?$'
+			=> 'index.php?pagename=$matches[1]&rezgo_page=order',
+			
+			// booking page
+			'(.+?)/book(.php)?/?$'
+			=> 'index.php?pagename=$matches[1]&rezgo_page=book',
+			
 			// booking complete print page
 			'(.+?)/complete/([^\/]*)/print/?$'
 			=> 'index.php?pagename=$matches[1]&rezgo_page=booking_complete_print&trans_num=$matches[2]',		
@@ -117,10 +129,6 @@
 			'(.+?)/terms(.php)?/?$'
 			=> 'index.php?pagename=$matches[1]&rezgo_page=terms',
 			
-			// wordpress only, booking page
-			'(.+?)/book(.php)?/?$'
-			=> 'index.php?pagename=$matches[1]&rezgo_page=book',
-			
 			// wordpress only, terms redirect page
 			'(.+?)/terms_popup(.php)?/?$'
 			=> 'index.php?pagename=$matches[1]&rezgo_page=terms_popup',
@@ -128,6 +136,10 @@
 			// wordpress only, shorturl redirect page
 			'(.+?)/shorturl_ajax(.php)?/?$'
 			=> 'index.php?pagename=$matches[1]&rezgo_page=shorturl_ajax',
+			
+			// wordpress only, index_ajax redirect page
+			'(.+?)/index_ajax(.php)?/?$'
+			=> 'index.php?pagename=$matches[1]&rezgo_page=index_ajax',
 			
 			// wordpress only, calendar redirect page for AJAX
 			'(.+?)/calendar(.php)?/?$'
@@ -220,6 +232,8 @@
 			return rezgo_display_contact();
 		} elseif($_REQUEST['rezgo_page'] == 'terms') {
 			return rezgo_display_terms();
+		} elseif($_REQUEST['rezgo_page'] == 'order') {
+			return rezgo_display_order();
 		} elseif($_REQUEST['rezgo_page'] == 'book') {
 			return rezgo_display_book();
 		} elseif($_REQUEST['rezgo_page'] == 'booking_complete') {
@@ -238,6 +252,11 @@
 			// this shorturl page redirects a standard request to a plugin-specific ajax file
 			foreach($_REQUEST as $k => $v) { $string[] = $k.'='.$v; }
 			header("location: ".REZGO_DIR.'/shorturl_ajax.php?'.implode("&", $string));
+			exit;
+		} elseif($_REQUEST['rezgo_page'] == 'index_ajax') {
+			// this shorturl page redirects a standard request to a plugin-specific ajax file
+			foreach($_REQUEST as $k => $v) { $string[] = $k.'='.$v; }
+			header("location: ".REZGO_DIR.'/index_ajax.php?'.implode("&", $string));
 			exit;
 		} elseif($_REQUEST['rezgo_page'] == 'calendar') {
 			// this calendar page redirects a standard request to a plugin-specific ajax file
@@ -433,6 +452,22 @@
 		return $display;
 	}
 	
+	function rezgo_display_order() {
+		
+		global $site, $item;
+		
+		// start a new instance of RezgoSite (in global scope since we are using it in a function)
+		$site = new RezgoSite();
+		
+		$display = $site->getTemplate('header');
+		
+		$display .= $site->getTemplate('order');
+			
+		$display .= $site->getTemplate('footer');
+				
+		return $display;
+	}
+	
 	function rezgo_display_book() {
 		
 		global $site, $item;
@@ -456,10 +491,20 @@
 		// start a new instance of RezgoSite (in global scope since we are using it in a function)
 		$site = new RezgoSite();
 		
+		// empty the cart
+		$site->clearCart();
+		
+		// grab the trans num so we can decide which template to show
+		$trans_num = $site->decode($_REQUEST['trans_num']);
+		
 		$display = $site->getTemplate('header');
 		
-		$display .= $site->getTemplate('booking_complete');
-			
+		if(strlen($trans_num) == 16) {
+			$display .= $site->getTemplate('booking_order');
+		} else {
+			$display .= $site->getTemplate('booking_complete');
+		}
+	
 		$display .= $site->getTemplate('footer');
 				
 		return $display;
@@ -472,18 +517,29 @@
 		// start a new instance of RezgoSite (in global scope since we are using it in a function)
 		$site = new RezgoSite(secure);
 		
+		// if there are slashes on everything, remove them.
+		$site->cleanRequest();
+		
 		// because the booking process uses a large multidimensional array we can't easily redirect
 		// it as a _GET string.  So we will run the booking process right here, and forward the script
 		// to the result value so it can display correctly.
 		
-		if($_REQUEST['book']) {
+		if($_REQUEST['rezgoAction'] == 'get_paypal_token') {
 		
-			$site->cleanRequest();
-		
-			$result = $site->sendBooking();
+			// send a partial commit (a=get_paypal_token) to get a paypal token for the modal window
+			// include the return url (this url), so the paypal API can use it in the modal window
+			if($_POST['mode'] == 'mobile') {
+				$result = $site->sendBooking(null, 'a=get_paypal_token&paypal_return_url=https://'.$_SERVER['HTTP_HOST'].REZGO_DIR.'/paypal');
+			} else {
+				$result = $site->sendBookingOrder(null, '<additional>get_paypal_token</additional><paypal_return_url>https://'.$_SERVER['HTTP_HOST'].REZGO_DIR.'/paypal</paypal_return_url>');
+			}
 			
-			//echo '<pre>'.print_r($result, 1).'</pre>';
+			$response = ($site->exists($result->paypal_token)) ? $result->paypal_token : 0;
+			
+		} elseif($_REQUEST['rezgoAction'] == 'book') {
 		
+			$result = ($_REQUEST['mode'] == 'mobile') ? $site->sendBooking() : $site->sendBookingOrder();
+			
 			if($result->status == 1) {
 			
 				// start a session so we can save the analytics code
@@ -500,9 +556,9 @@
 			} else {
 				// this booking failed, send a status code back to the requesting page
 				
-				if($result->message == 'Availability Error') {
+				if($result->message == 'Availability Error' || $result->mesage == 'Fatal Error') {
 					$response = 2;
-				} else if($result->message == 'Payment Declined') {
+				} else if($result->message == 'Payment Declined' || $result->message == 'Invalid Card Checksum' || $result->message == 'Invalid Card Expiry') {
 					$response = 3;
 				} else if($result->message == 'Account Error') {
 					// hard system error, no commit requests are allowed if there is no valid payment method
@@ -513,9 +569,12 @@
 			}
 		}
 		
-		//die('[['.$response.']]');
+		if($_SESSION['error_catch']) {
+			$debug_out = $_SESSION['error_catch'];
+			unset($_SESSION['error_catch']);
+		}
 		
-		$site->sendTo(REZGO_DIR.'/book_ajax.php?response='.$response);
+		$site->sendTo(REZGO_DIR.'/book_ajax.php?response='.urlencode($debug_out).$response);
 	}
 	
 	

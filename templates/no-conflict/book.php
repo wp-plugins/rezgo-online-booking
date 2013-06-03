@@ -1,6 +1,19 @@
+<?	
+	// handle old-style booking requests
+	if($_REQUEST[uid] && $_REQUEST[date]) {	
+		$for_array = array('adult', 'child', 'senior', 'price4', 'price5', 'price6', 'price7', 'price8', 'price9');
+		$new_header = '/book?order=clear&add[0][uid]='.$_REQUEST[uid].'&add[0][date]='.$_REQUEST[date];
+		foreach($for_array as $v) {
+			if($_REQUEST[$v.'_num']) $new_header .= '&add[0]['.$v.'_num]='.$_REQUEST[$v.'_num'];
+		}
+		$site->sendTo($new_header);
+	}
+?>
+
 <script type="text/javascript" src="<?=$site->path?>/javascript/jquery.scrollTo.min.js"></script>
 <script type="text/javascript" src="<?=$site->path?>/javascript/jquery.form.js"></script>
 <script type="text/javascript" src="<?=$site->path?>/javascript/jquery.selectboxes.pack.js"></script>
+<script type="text/javascript" src="<?=$site->path?>/javascript/jquery.validate.min.js"></script>
 
 <div id="rezgo" class="wrp_book">
 
@@ -15,102 +28,202 @@
 
 <div id="panel_full">
 	<div class="breadcrumb"><a href="<?=$site->base?>/?search=restore" class="back"><span><<</span> Back to Results</a></div>
-	<div class="header"><h1>Your Booking Details</h1><h2 class="on" id="step_1" onclick="stepBack();">{ 1. BOOK }</h2><h2 class="off" id="step_2" onclick="stepForward();">{ 2. PAY }</h2></div>
+	<div class="header">
+		<h1>Your Booking Details</h1><h2 class="on" id="step_1" onclick="stepBack();">{ 1. BOOK }</h2><h2 class="off" id="step_2" onclick="stepForward();">{ 2. PAY }</h2>
+		<div style="float:right; padding:9px 9px 0 0;">
+			<script type="text/javascript" src="https://sealserver.trustwave.com/seal.js?style=normal"></script>
+		</div>
+	</div>
 
   <div class="header_shadow"><img src="<?=$site->path?>/images/header_crumb_left.png" style="float:left" /><img src="<?=$site->path?>/images/header_crumb_right.png" style="float:right;" /></div>
 	
-	<? if(!$_REQUEST['uid'] || !$_REQUEST['date'] || !$site->getTours('t=uid&q='.$_REQUEST['uid'].'&d='.$_REQUEST['date'].$site->getPaxString())) { $site->sendTo("/tour"); } // #jm - should this be hardcoded as "/tour"? ?>
 	
-	<? foreach( $site->getTours('t=uid&q='.$_REQUEST['uid'].'&d='.$_REQUEST['date'].$site->getPaxString()) as $item ): ?>
+	<script>
+		var elements = new Array();
+		
+		var split_total = new Array();
+		var overall_total = '0';
+		
+		var form_symbol = '$';
+		var form_decimals = '2';
+		var form_separator = ',';
+		
+		// money formatting
+		Number.prototype.formatMoney = function(decPlaces, thouSeparator, decSeparator) {
+	    var n = this,
+	    decPlaces = isNaN(decPlaces = Math.abs(decPlaces)) ? form_decimals : decPlaces,
+	    decSeparator = decSeparator == undefined ? "." : decSeparator,
+	    thouSeparator = thouSeparator == undefined ? form_separator : thouSeparator,
+	    sign = n < 0 ? "-" : "",
+	    i = parseInt(n = Math.abs(+n || 0).toFixed(decPlaces)) + "",
+	    j = (j = i.length) > 3 ? j % 3 : 0;
+	    
+	    var dec;
+	    var out = sign + (j ? i.substr(0, j) + thouSeparator : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + thouSeparator);
+	    if(decPlaces) dec = Math.abs(n - i).toFixed(decPlaces).slice(2);
+	    if(dec) out += decSeparator + dec;
+	    return out;
+		};
+		
+		function clean_money_string(str) {
+			// convert to str in case it has strange characters (like a ,)
+			str += '';
+			// clean (except . and -) and convert back to float
+			return parseFloat(str.replace(/[^0-9.-]/, ""));
+		}
+		
+		function add_element(id, name, price, order_num) {
+			
+			// ensure our array has an array for the actual elements
+			if(!elements[order_num]) elements[order_num] = new Array();
+			
+			var num = add_price = clean_money_string(price);
+			if(elements[order_num][id]) num = num + clean_money_string(elements[order_num][id]);
+			
+			var price = num.formatMoney();
+
+			var display_price = form_symbol + price;
+			
+			name = name.replace("\\'", "'");
+			
+			if(!elements[order_num][id]) {
+				var content = '<li class="info" id="element_' + order_num + '_' + id + '"><label class="extra">' + name + '</label><span class="extra price_neg" id="val_' + order_num + '_' + id + '">' + display_price + '</span></li>';
+				jQuery("#fee_box_" + order_num).html( jQuery("#fee_box_" + order_num).html() + content );
+			} else {
+				if(document.getElementById('element_' + order_num + '_' + id).style.display == 'none') document.getElementById('element_' + order_num + '_' + id).style.display = '';
+				jQuery("#val_" + order_num + "_" + id).html(display_price);
+			}	
+			elements[order_num][id] = price;
+			
+			// add to total amount
+			var total = split_total[order_num];
+			total = clean_money_string(total) + add_price;
+			total = total.formatMoney();
+			split_total[order_num] = total;
+			
+			// set the total for this item
+			jQuery("#total_value_" + order_num).html(form_symbol + total);
+			
+			// set the order total if this item doesn't have a deposit set
+			if(!jQuery("#deposit_value_" + order_num).html()) {
+				overall_total = clean_money_string(overall_total) + add_price;
+				overall_total = overall_total.formatMoney();
+				
+				jQuery("#total_value").html(form_symbol + overall_total);
+			}
+		
+			// if total is greater than 0 then appear payment section
+			if(overall_total > 0) document.getElementById('payment_info').style.display = '';
+		}
+		
+		function sub_element(id, price, order_num) {
+		
+			// ensure our array has an array for the actual elements
+			if(!elements[order_num]) elements[order_num] = new Array();
+		
+			if(!elements[order_num][id] || elements[order_num][id] == 0) return false;
+		
+			var num = sub_price = clean_money_string(price);
+			num = clean_money_string(elements[order_num][id]) - num;
+			
+			var price = num.formatMoney();
+			if(price < 0) price = 0;
+			
+			var display_price = form_symbol + price;
+			
+			if(price == 0) {	
+				document.getElementById('element_' + order_num + '_' + id).style.display = 'none';
+			} else {
+				document.getElementById('val_' + order_num + '_' + id).innerHTML = display_price;
+			}	
+			elements[order_num][id] = price;
+			
+			// sub from total amount
+			var total = split_total[order_num];
+			total = clean_money_string(total) - sub_price;
+			total = total.formatMoney();
+			split_total[order_num] = total;
+			
+			// set the total for this item
+			jQuery("#total_value_" + order_num).html(form_symbol + total);
+			
+			// set the order total if this item doesn't have a deposit set
+			if(!jQuery("#deposit_value_" + order_num).html()) {
+				overall_total = clean_money_string(overall_total) - sub_price;
+				overall_total = overall_total.formatMoney();
+				
+				jQuery("#total_value").html(form_symbol + overall_total);
+			}
+		
+			// if total is 0 then hide payment section
+			if(overall_total <= 0) document.getElementById('payment_info').style.display = 'none';
+			
+		}
+	</script>
+
+	<form method="post" id="book" action="<?=$site->base?>/book_ajax.php">
+  
+  <!-- pass some hidden data to our form -->
+  <input type="hidden" name="rezgoAction" id="rezgoAction" value="book">
+  
+  
+  <div id="content_1">
+  
+  <? 
+		$c = 0;
+		$cart = $site->getCart(1); // get the cart, remove any dead entries
+		
+		if(!count($cart)) { 
+			$site->sendTo($site->base); 
+		} 
+	
+		// --------------------------------------------
+		//
+		// Start Cart Loop - For each tour in the order
+		//
+		// --------------------------------------------
+		
+		foreach( $cart as $order ) {
+		
+			$c++;
+			
+			$pax_string = '';
+			foreach($order->pax as $label => $pax) {
+				$pax_string .= '&'.$label.'_num='.$pax;
+			}
+	
+	?>
+	
+	<? foreach( $site->getTours('t=uid&q='.$order->uid.'&d='.date("Y-m-d", $order->date).$pax_string) as $item ) { ?>
 	
 		<? $site->readItem($item) ?>
 		
 		<script>
-			var elements = new Array();
-			var total = <?=$item->overall_total?>;
-			
-			function add_element(id, name, price) {		
-				var num = add_price = parseFloat(price);
-				if(elements[id]) num = num + parseFloat(elements[id]);
-				
-				var price = num.toFixed(<?=$item->currency_decimals?>);
-
-				var display_price = '<?=$item->currency_symbol?>' + price;
-				
-				if(!elements[id]) {
-					var content = '<li class="info" id="element_' + id + '"><label class="extra">' + name + '</label><span class="extra price_neg" id="val_' + id + '">' + display_price + '</span></li>';
-					jQuery("#fee_box").html( jQuery("#fee_box").html() + content );
-				} else {
-					if(document.getElementById('element_' + id).style.display == 'none') document.getElementById('element_' + id).style.display = '';
-					jQuery("#val_" + id).html(display_price);
-				}	
-				elements[id] = price;
-				
-				// add to total amount
-				total = parseFloat(total) + add_price;
-				total = total.toFixed(<?=$item->currency_decimals?>);
-				jQuery("#total_value").html('<?=$item->currency_symbol?>' + total);
-			
-				// if total is greater than 0 then appear payment section
-				if(total > 0) document.getElementById('payment_info').style.display = '';
-			}
-			
-			function sub_element(id, price) {
-				if(!elements[id] || elements[id] == 0) return false;
-			
-				var num = sub_price = parseFloat(price);
-				num = parseFloat(elements[id]) - num;
-				
-				var price = num.toFixed(<?=$item->currency_decimals?>);
-				if(price < 0) price = 0;
-				
-				var display_price = '<?=$item->currency_symbol?>' + price;
-				
-				if(price == 0) {	
-					document.getElementById('element_' + id).style.display = 'none';
-				} else {
-					document.getElementById('val_' + id).innerHTML = display_price;
-				}	
-				elements[id] = price;
-				
-				// sub from total amount
-				total = parseFloat(total) - sub_price;
-				total = total.toFixed(<?=$item->currency_decimals?>);
-				jQuery("#total_value").html('<?=$item->currency_symbol?>' + total);
-			
-				// if total is less than 0 then disappear payment section
-				if(total <= 0) document.getElementById('payment_info').style.display = 'none';
-			}
+			split_total[<?=$c?>] = <?=$item->overall_total?>;
 		</script>
-	
-		<form method="post" id="book" action="<?=$site->base?>/book_ajax.php">
+		
+		<input type="hidden" name="booking[<?=$c?>][book]" value="<?=$order->uid?>"> 
+	  <input type="hidden" name="booking[<?=$c?>][date]" value="<?=date("Y-m-d", $order->date)?>">
 	  
-	  <!-- pass some hidden data to our form -->
-	  <input type="hidden" name="rezgoAction" value="book">
-	  
-	  <input type="hidden" name="book" value="<?=$_REQUEST['uid']?>"> 
-	  <input type="hidden" name="date" value="<?=$_REQUEST['date']?>">
-	  
-	  <input type="hidden" name="adult_num" value="<?=$_REQUEST['adult_num']?>">
-	  <input type="hidden" name="child_num" value="<?=$_REQUEST['child_num']?>">
-	  <input type="hidden" name="senior_num" value="<?=$_REQUEST['senior_num']?>">
-	  <input type="hidden" name="price4_num" value="<?=$_REQUEST['price4_num']?>">
-	  <input type="hidden" name="price5_num" value="<?=$_REQUEST['price5_num']?>">
-	  <input type="hidden" name="price6_num" value="<?=$_REQUEST['price6_num']?>">
-	  <input type="hidden" name="price7_num" value="<?=$_REQUEST['price7_num']?>">
-	  <input type="hidden" name="price8_num" value="<?=$_REQUEST['price8_num']?>">
-	  <input type="hidden" name="price9_num" value="<?=$_REQUEST['price9_num']?>">
-	  
-	  <div id="content_1">
+	  <input type="hidden" name="booking[<?=$c?>][adult_num]" value="<?=$order->adult_num?>">
+	  <input type="hidden" name="booking[<?=$c?>][child_num]" value="<?=$order->child_num?>">
+	  <input type="hidden" name="booking[<?=$c?>][senior_num]" value="<?=$order->senior_num?>">
+	  <input type="hidden" name="booking[<?=$c?>][price4_num]" value="<?=$order->price4_num?>">
+	  <input type="hidden" name="booking[<?=$c?>][price5_num]" value="<?=$order->price5_num?>">
+	  <input type="hidden" name="booking[<?=$c?>][price6_num]" value="<?=$order->price6_num?>">
+	  <input type="hidden" name="booking[<?=$c?>][price7_num]" value="<?=$order->price7_num?>">
+	  <input type="hidden" name="booking[<?=$c?>][price8_num]" value="<?=$order->price8_num?>">
+	  <input type="hidden" name="booking[<?=$c?>][price9_num]" value="<?=$order->price9_num?>">
 	  
 	  <!-- cart section -->
+	  <br>
 	  <div class="tour_info">
-		  <h2>Your Booking</h2>
+		  <h2>Booking <?=$c?> of <?=count($cart)?></h2>
 		  <fieldset>
 		  <ol class="tour_receipt">
 		  	<li class="info"><label>You are booking</label><span><?=$item->name?><br /><?=$item->time?></span></li>
 		
-		    <li class="info"><label>Date</label><span><?=date("F d, Y", strtotime($_REQUEST['date']))?></span></li>
+		    <li class="info"><label>Date</label><span><?=date("F d, Y", $order->date)?></span></li>
 		    <li class="info"><label>Duration</label><span><?=$item->duration?></span></li>
 		   	<? if($_COOKIE['rezgo_promo']) { ?>
 		   	<li class="info"><label>Promotional Code</label><span><?=$_COOKIE['rezgo_promo']?></span></li>
@@ -125,11 +238,11 @@
 		          <label class="line_total">total</label>
 		        </li>
 		        
-		        <? foreach( $site->getTourPrices() as $price ): ?>
-		        	<? if($_REQUEST[$price->name.'_num']) { ?>
+		        <? foreach( $site->getTourPrices() as $price ) { ?>
+		        	<? if($order->{$price->name.'_num'}) { ?>
 			        	<li class="info">
 				        	<span class="type"><? if($site->exists($price->base)) { ?><span class="discount"></span><? } ?><?=$price->label?></span>
-				        	<span class="qty"><? if($site->exists($price->base)) { ?><span class="discount"></span><? } ?><?=$_REQUEST[$price->name.'_num']?></span>
+				        	<span class="qty"><? if($site->exists($price->base)) { ?><span class="discount"></span><? } ?><?=$order->{$price->name.'_num'}?></span>
 				        	<span class="cost">
 				        		<? if($site->exists($price->base)) { ?><span class="discount"><?=$site->formatCurrency($price->base)?></span><? } ?>
 				        		<?=$site->formatCurrency($price->price)?>
@@ -137,7 +250,7 @@
 				        	<span class="line_total"><? if($site->exists($price->base)) { ?><span class="discount"></span><? } ?><?=$site->formatCurrency($price->total)?></span>
 				        </li>
 		        	<? } ?>
-		        <? endforeach; ?>
+		        <? } ?>
 		      	
 						<li class="info"><label class="subtotal">Subtotal</label><span class="subtotal"><?=$site->formatCurrency($item->sub_total)?></span></li>
 					        
@@ -155,26 +268,26 @@
 	  
 	  <div class="booking_info">
 	  
-	  <? foreach( $site->getTourPrices($item) as $price ): ?>
-	  	<? foreach( $site->getTourPriceNum($price) as $num ): ?>
+	  <? foreach( $site->getTourPrices($item) as $price ) { ?>	  	
+	  	<? foreach( $site->getTourPriceNum($price, $order) as $num ) { ?>
 	  
 			  <h2 class="title"><?=$price->label?> <?=$num?></h2>
 			  <fieldset>
 			  	<ol>
 			
-			      <li class="half"><label for="fname">First Name<? if($item->group == 'require') { ?><em>*</em><? } ?></label><input type="text" id="fname" name="tour_group[<?=$price->name?>][<?=$num?>][first_name]" value=""<? if($item->group == 'require') { ?> required="required"<? } ?> /></li>
-			      <li class="half"><label for="lname">Last Name<? if($item->group == 'require') { ?><em>*</em><? } ?></label><input type="text" id="lname" name="tour_group[<?=$price->name?>][<?=$num?>][last_name]" value=""<? if($item->group == 'require') { ?> required="required"<? } ?> /></li>
-			      <li class="half"><label for="phone">Phone Number</label><input type="text" id="phone" name="tour_group[<?=$price->name?>][<?=$num?>][phone]" value="" /></li>
-			      <li class="half"><label for="email">Email Address</label><input type="email" id="email" name="tour_group[<?=$price->name?>][<?=$num?>][email]" value="" /></li>
+			      <li class="half"><label for="fname_<?=$c?>_<?=$price->name?>_<?=$num?>_first_name">First Name<? if($item->group == 'require') { ?><em>*</em><? } ?></label><input type="text" id="fname_<?=$c?>_<?=$price->name?>_<?=$num?>_first_name" name="booking[<?=$c?>][tour_group][<?=$price->name?>][<?=$num?>][first_name]" value=""<? if($item->group == 'require') { ?> class="required"<? } ?> /></li>
+			      <li class="half"><label for="fname_<?=$c?>_<?=$price->name?>_<?=$num?>_last_name">Last Name<? if($item->group == 'require') { ?><em>*</em><? } ?></label><input type="text" id="fname_<?=$c?>_<?=$price->name?>_<?=$num?>_last_name" name="booking[<?=$c?>][tour_group][<?=$price->name?>][<?=$num?>][last_name]" value=""<? if($item->group == 'require') { ?> class="required"<? } ?> /></li>
+			      <li class="half"><label for="fname_<?=$c?>_<?=$price->name?>_<?=$num?>_phone">Phone Number</label><input type="text" id="fname_<?=$c?>_<?=$price->name?>_<?=$num?>_phone" name="booking[<?=$c?>][tour_group][<?=$price->name?>][<?=$num?>][phone]" value="" /></li>
+			      <li class="half"><label for="fname_<?=$c?>_<?=$price->name?>_<?=$num?>_email">Email Address</label><input type="email" id="fname_<?=$c?>_<?=$price->name?>_<?=$num?>_email" name="booking[<?=$c?>][tour_group][<?=$price->name?>][<?=$num?>][email]" value="" /></li>
 			  		
-			  		<? foreach( $site->getTourForms(group) as $form ): ?>
+			  		<? foreach( $site->getTourForms(group) as $form ) { ?>
 	  					
 	  					<? if($form->type == 'text') { ?>
 	  						<li class="hr"></li>
 	  						<li>
 	  							<label><?=$form->label?><? if($form->require) { ?><em>*</em><? } ?></label>
 	  							<span><?=$form->comments?></span>
-			    				<input type="text" name="tour_group[<?=$price->name?>][<?=$num?>][forms][<?=$form->id?>]"<? if($form->require) { ?> required="required"<? } ?> />
+			    				<input type="text" name="booking[<?=$c?>][tour_group][<?=$price->name?>][<?=$num?>][forms][<?=$form->id?>]"<? if($form->require) { ?> class="required"<? } ?> />
 			    			</li>
 	  					<? } ?>
 	  					
@@ -183,7 +296,7 @@
 	  						<li>
 	  							<label><?=$form->label?><? if($form->require) { ?><em>*</em><? } ?></label>
 	  							<span><?=$form->comments?></span>
-			    				<select name="tour_group[<?=$price->name?>][<?=$num?>][forms][<?=$form->id?>]"<? if($form->require) { ?> required="required"<? } ?>>
+			    				<select name="booking[<?=$c?>][tour_group][<?=$price->name?>][<?=$num?>][forms][<?=$form->id?>]"<? if($form->require) { ?> class="required"<? } ?>>
 							    	<? foreach($form->options as $option) { ?>
 							    		<option><?=$option?></option>
 							    	<? } ?>
@@ -196,7 +309,7 @@
 	  						<li>
 	  							<label><?=$form->label?><? if($form->require) { ?><em>*</em><? } ?></label>
 	  							<span><?=$form->comments?></span>
-			    				<select multiple="multiple" name="tour_group[<?=$price->name?>][<?=$num?>][forms][<?=$form->id?>][]"<? if($form->require) { ?> required="required"<? } ?>>
+			    				<select multiple="multiple" name="booking[<?=$c?>][tour_group][<?=$price->name?>][<?=$num?>][forms][<?=$form->id?>][]"<? if($form->require) { ?> class="required"<? } ?>>
 							    	<? foreach($form->options as $option) { ?>
 							    		<option><?=$option?></option>
 							    	<? } ?>
@@ -209,33 +322,33 @@
 	  						<li>
 	  							<label><?=$form->label?><? if($form->require) { ?><em>*</em><? } ?></label>
 	  							<span><?=$form->comments?></span>
-			    				<textarea name="tour_group[<?=$price->name?>][<?=$num?>][forms][<?=$form->id?>]" cols="40" rows="4"<? if($form->require) { ?> required="required"<? } ?>></textarea>
+			    				<textarea name="booking[<?=$c?>][tour_group][<?=$price->name?>][<?=$num?>][forms][<?=$form->id?>]" cols="40" rows="4"<? if($form->require) { ?> class="required"<? } ?>></textarea>
 			    			</li>
 	  					<? } ?>
 	  					
 	  					<? if($form->type == 'checkbox') { ?>
 	  						<li class="hr"></li>
 	  						<li>
-	  							<input type="checkbox" class="checkbox" id="<?=$form->id?>|<?=addslashes($form->label)?>|<?=$form->price?>" name="tour_group[<?=$price->name?>][<?=$num?>][forms][<?=$form->id?>]"<? if($form->require) { ?> required="required"<? } ?> <? if($form->price) { ?>onclick="if(this.checked) { add_element('<?=$form->id?>', '<?=addslashes($form->label)?>', '<? if($form->price_mod == '-') { ?><?=$form->price_mod?><? } ?><?=$form->price?>'); } else { sub_element('<?=$form->id?>', '<? if($form->price_mod == '-') { ?><?=$form->price_mod?><? } ?><?=$form->price?>'); }"<? } ?> />
-	  							<label class="checkbox"><?=$form->label?><? if($form->require) { ?><em>*</em><? } ?><? if($form->price) { ?> <em><?=$form->price_mod?> <?=$site->formatCurrency($form->price)?></em><? } ?> 
+	  							<input type="checkbox" class="checkbox<? if($form->require) { ?> required<? } ?>" id="<?=$form->id?>|<?=addslashes($form->label)?>|<?=$form->price?>|<?=$c?>|<?=$price->name?>|<?=$num?>" name="booking[<?=$c?>][tour_group][<?=$price->name?>][<?=$num?>][forms][<?=$form->id?>]" <? if($form->price) { ?>onclick="if(this.checked) { add_element('<?=$form->id?>', '<?=addslashes(htmlentities($form->label))?>', '<? if($form->price_mod == '-') { ?><?=$form->price_mod?><? } ?><?=$form->price?>', '<?=$c?>'); } else { sub_element('<?=$form->id?>', '<? if($form->price_mod == '-') { ?><?=$form->price_mod?><? } ?><?=$form->price?>', '<?=$c?>'); }"<? } ?> />
+	  							<label class="checkbox" for="<?=$form->id?>|<?=addslashes($form->label)?>|<?=$form->price?>|<?=$c?>|<?=$price->name?>|<?=$num?>"><?=$form->label?><? if($form->require) { ?><em>*</em><? } ?><? if($form->price) { ?> <em><?=$form->price_mod?> <?=$site->formatCurrency($form->price)?></em><? } ?> 
 	  								<span class="checkbox"><?=$form->comments?></span>
 	  							</label>
 	  						</li>
 	  					<? } ?>
 
-						<? endforeach; ?>
+						<? } ?>
 
 			   	</ol>
 			 	</fieldset>
 			   
-			<? endforeach; ?>
-		<? endforeach; ?>
+			<? } ?>
+		<? } ?>
 	
 	  </div> 
 	  <!-- end of passnger info-->
 	  
 		<? } ?>
-	 
+	
 		<? if($site->getTourForms(primary)) { ?>
 		  
 		<!---- additional info ---->
@@ -244,7 +357,7 @@
 		<!-- start extra form field -->
 		  <fieldset>
 				<ol>
-					<? foreach( $site->getTourForms(primary) as $form ): ?>
+					<? foreach( $site->getTourForms(primary) as $form ) { ?>
 		  					
 		  			<? if($first_line) { ?><li class="hr"></li><? } else { $first_line = 1; } ?>
 		  					
@@ -252,7 +365,7 @@
 							<li>
 								<label><?=$form->label?><? if($form->require) { ?><em>*</em><? } ?></label>
 								<span><?=$form->comments?></span>
-		    				<input type="text" name="tour_forms[<?=$form->id?>]"<? if($form->require) { ?> required="required"<? } ?> />
+		    				<input type="text" name="booking[<?=$c?>][tour_forms][<?=$form->id?>]"<? if($form->require) { ?> class="required"<? } ?> />
 		    			</li>
 						<? } ?>
 						
@@ -260,7 +373,7 @@
 							<li>
 								<label><?=$form->label?><? if($form->require) { ?><em>*</em><? } ?></label>
 								<span><?=$form->comments?></span>
-		    				<select name="tour_forms[<?=$form->id?>]"<? if($form->require) { ?> required="required"<? } ?>>
+		    				<select name="booking[<?=$c?>][tour_forms][<?=$form->id?>]"<? if($form->require) { ?> class="required"<? } ?>>
 		    					<? foreach($form->options as $option) { ?>
 						    		<option><?=$option?></option>
 						    	<? } ?>
@@ -272,7 +385,7 @@
 							<li>
 								<label><?=$form->label?><? if($form->require) { ?><em>*</em><? } ?></label>
 								<span><?=$form->comments?></span>
-								<select multiple="multiple" name="tour_forms[<?=$form->id?>]"<? if($form->require) { ?> required="required"<? } ?>>
+								<select multiple="multiple" name="booking[<?=$c?>][tour_forms][<?=$form->id?>][]"<? if($form->require) { ?> class="required"<? } ?>>
 						    	<? foreach($form->options as $option) { ?>
 						    		<option><?=$option?></option>
 						    	<? } ?>
@@ -284,96 +397,150 @@
 							<li>
 								<label><?=$form->label?><? if($form->require) { ?><em>*</em><? } ?></label>
 								<span><?=$form->comments?></span>
-		    				<textarea name="tour_forms[<?=$form->id?>]"<? if($form->require) { ?> required="required"<? } ?> cols="40" rows="4"></textarea>
+		    				<textarea name="booking[<?=$c?>][tour_forms][<?=$form->id?>]"<? if($form->require) { ?> class="required"<? } ?> cols="40" rows="4"></textarea>
 		    			</li>
 						<? } ?>
 						
 						<? if($form->type == 'checkbox') { ?>
 							<li>
-								<input type="checkbox" class="checkbox" id="<?=$form->id?>|<?=addslashes($form->label)?>|<?=$form->price?>" name="tour_forms[<?=$form->id?>]"<? if($form->require) { ?> required="required"<? } ?> <? if($form->price) { ?>onclick="if(this.checked) { add_element('<?=$form->id?>', '<?=addslashes($form->label)?>', '<? if($form->price_mod == '-') { ?><?=$form->price_mod?><? } ?><?=$form->price?>'); } else { sub_element('<?=$form->id?>', '<? if($form->price_mod == '-') { ?><?=$form->price_mod?><? } ?><?=$form->price?>'); }"<? } ?> />
-								<label class="checkbox"><?=$form->label?><? if($form->require) { ?><em>*</em><? } ?><? if($form->price) { ?> <em><?=$form->price_mod?> <?=$site->formatCurrency($form->price)?></em><? } ?> 
+								<input type="checkbox" class="checkbox<? if($form->require) { ?> required<? } ?>" id="<?=$form->id?>|<?=addslashes($form->label)?>|<?=$form->price?>" name="booking[<?=$c?>][tour_forms][<?=$form->id?>]" <? if($form->price) { ?>onclick="if(this.checked) { add_element('<?=$form->id?>', '<?=addslashes(htmlentities($form->label))?>', '<? if($form->price_mod == '-') { ?><?=$form->price_mod?><? } ?><?=$form->price?>', '<?=$c?>'); } else { sub_element('<?=$form->id?>', '<? if($form->price_mod == '-') { ?><?=$form->price_mod?><? } ?><?=$form->price?>', '<?=$c?>'); }"<? } ?> />
+								<label class="checkbox" for="<?=$form->id?>|<?=addslashes($form->label)?>|<?=$form->price?>"><?=$form->label?><? if($form->require) { ?><em>*</em><? } ?><? if($form->price) { ?> <em><?=$form->price_mod?> <?=$site->formatCurrency($form->price)?></em><? } ?> 
 									<span class="checkbox"><?=$form->comments?></span>
 								</label>
 							</li>
 						<? } ?>
 		
-					<? endforeach; ?>
+					<? } ?>
 				</ol>
 			</fieldset>
 		  </div>
 			<!-- end of additional info -->
 		  
 		  <? } ?>
-	  
-	  <? endforeach; ?>
-  
+		  
+		<? } ?>
+		
+	<? } /* end shopping cart loop */ ?>
+  	
 	<!----- submit button ----->
-
-	<div><input class="submit" type="submit" value="Next Step"></div>
-
+	
+		<div>
+			<? if($site->getCartState()) { ?>
+				<input class="previous" type="button" value="Back to Order" onclick="document.location.href='<?=$site->base?>/order'; return false;">
+			<? } ?>
+			<input class="submit" type="button" value="Next Step" onclick="stepForward(); return false;">
+		</div>
+	
 	</div>
 
 	<div id="content_2" style="display:none;">
-
-		<!-- cart section -->
-	  <div class="tour_info">
-		  <h2>Your Booking</h2>
-		  <fieldset>
-		  <ol class="tour_receipt">
-		  	<li class="info"><label>You are booking</label><span><?=$item->name?><br /><?=$item->time?></span></li>
 		
-		    <li class="info"><label>Date</label><span><?=date("F d, Y", strtotime($_REQUEST['date']))?></span></li>
-		    <li class="info"><label>Duration</label><span><?=$item->duration?></span></li>
-		    <? if($_COOKIE['rezgo_promo']) { ?>
-		   	<li class="info"><label>Promotional Code</label><span><?=$_COOKIE['rezgo_promo']?></span></li>
-		   	<? } ?>
-		    <li class="info last"><label>Price</label>
-		    	<ol class="price">
-		      	<li class="info">
-		          <label class="type">type</label>
-		
-		          <label class="qty">qty</label>
-		          <label class="cost">cost</label>
-		          <label class="line_total">total</label>
-		        </li>
-		        
-		        <? foreach( $site->getTourPrices($item) as $price ): ?>
-		        	<? if($_REQUEST[$price->name.'_num']) { ?>
-			        	<li class="info">
-				        	<span class="type"><? if($site->exists($price->base)) { ?><span class="discount"></span><? } ?><?=$price->label?></span>
-				        	<span class="qty"><? if($site->exists($price->base)) { ?><span class="discount"></span><? } ?><?=$_REQUEST[$price->name.'_num']?></span>
-				        	<span class="cost">
-				        		<? if($site->exists($price->base)) { ?><span class="discount"><?=$site->formatCurrency($price->base)?></span><? } ?>
-				        		<?=$site->formatCurrency($price->price)?>
-				        	</span>
-				        	<span class="line_total"><? if($site->exists($price->base)) { ?><span class="discount"></span><? } ?><?=$site->formatCurrency($price->total)?></span>
-				        </li>
-		        	<? } ?>
-		        <? endforeach; ?>
-		      	
-						<li class="info"><label class="subtotal">Subtotal</label><span class="subtotal"><?=$site->formatCurrency($item->sub_total)?></span></li>
-						
-						<? if($site->exists($item->tax_calc)) { ?>
-						<li class="info"><label class="tax_fees">Taxes & Fees</label><span class="tax_fees price_pos"><?=$site->formatCurrency($item->tax_calc)?></span></li>
-						<? } ?>
-						
-						<div id="fee_box">
+		<?
+			$c = 0;
+			
+			// --------------------------------------------
+			//
+			// Start Cart Loop - For each tour in the order
+			//
+			// --------------------------------------------
+			
+			foreach( $cart as $order ) {
+			$c++;
+			
+			$pax_string = '';
+			foreach($order->pax as $label => $pax) {
+				$pax_string .= '&'.$label.'_num='.$pax;
+			}
 	
-						</div>
-						
-						<li class="info"><label class="total">TOTAL</label><span class="total" id="total_value"><?=$site->formatCurrency($item->overall_total)?></span></li>
-						
-						<? if($site->exists($item->deposit)) { ?>
-						<li class="info"><label class="total">Deposit to Pay Now</label><span class="total" id="total_value"><?=$site->formatCurrency($item->deposit_value)?></span></li>
-		        <? } ?>
-		        
-		      </ol>
-		    </li>
-		  </ol>
+		?>
+	
+		<? foreach( $site->getTours('t=uid&q='.$order->uid.'&d='.date("Y-m-d", $order->date).$pax_string) as $item ) { ?>
+	
+			<? $site->readItem($item) ?>
+		
+			
+			<!-- cart section -->
+		  <div class="tour_info">
+			  <h2>Booking <?=$c?> of <?=count($cart)?></h2>
+			  <fieldset>
+			  <ol class="tour_receipt">
+			  	<li class="info"><label>You are booking</label><span><?=$item->name?><br /><?=$item->time?></span></li>
+			
+			    <li class="info"><label>Date</label><span><?=date("F d, Y", $order->date)?></span></li>
+			    <li class="info"><label>Duration</label><span><?=$item->duration?></span></li>
+			    <? if($_COOKIE['rezgo_promo']) { ?>
+			   	<li class="info"><label>Promotional Code</label><span><?=$_COOKIE['rezgo_promo']?></span></li>
+			   	<? } ?>
+			    <li class="info last"><label>Price</label>
+			    	<ol class="price">
+			      	<li class="info">
+			          <label class="type">type</label>
+			
+			          <label class="qty">qty</label>
+			          <label class="cost">cost</label>
+			          <label class="line_total">total</label>
+			        </li>
+			        
+			        <? foreach( $site->getTourPrices($item) as $price ) { ?>
+			        	<? if($order->{$price->name.'_num'}) { ?>
+				        	<li class="info">
+					        	<span class="type"><? if($site->exists($price->base)) { ?><span class="discount"></span><? } ?><?=$price->label?></span>
+					        	<span class="qty"><? if($site->exists($price->base)) { ?><span class="discount"></span><? } ?><?=$order->{$price->name.'_num'}?></span>
+					        	<span class="cost">
+					        		<? if($site->exists($price->base)) { ?><span class="discount"><?=$site->formatCurrency($price->base)?></span><? } ?>
+					        		<?=$site->formatCurrency($price->price)?>
+					        	</span>
+					        	<span class="line_total"><? if($site->exists($price->base)) { ?><span class="discount"></span><? } ?><?=$site->formatCurrency($price->total)?></span>
+					        </li>
+			        	<? } ?>
+			        <? } ?>
+			      	
+							<li class="info"><label class="subtotal">Subtotal</label><span class="subtotal"><?=$site->formatCurrency($item->sub_total)?></span></li>
+							
+							<? if($site->exists($item->tax_calc)) { ?>
+							<li class="info"><label class="tax_fees">Taxes & Fees</label><span class="tax_fees price_pos"><?=$site->formatCurrency($item->tax_calc)?></span></li>
+							<? } ?>
+							
+							<div id="fee_box_<?=$c?>">
+		
+							</div>
+							
+							<li class="info"><label class="total">TOTAL FOR THIS BOOKING</label><span class="total" id="total_value_<?=$c?>"><?=$site->formatCurrency($item->overall_total)?></span></li>
+							
+							<? if($site->exists($item->deposit)) { ?>
+							<li class="info"><label class="total">Deposit to Pay Now</label><span class="total" id="deposit_value_<?=$c?>"><?=$site->formatCurrency($item->deposit_value)?></span></li>
+			        <? 
+			        		$complete_booking_total += (float) $item->deposit_value;
+			        	} else {
+				      		$complete_booking_total += (float) $item->overall_total;
+			        	} 
+			        ?>
+			      </ol>
+			    </li>
+			  </ol>
+			  </fieldset>
+		  </div>
+		  <!-- end of receipt section -->
+		  
+		  <? } ?>
+		  	
+		<? } ?>
+		
+		<script>
+			overall_total = '<?=$complete_booking_total?>';
+			
+			form_decimals = '<?=$item->currency_decimals?>';
+			form_symbol = '<?=$item->currency_symbol?>';
+			form_separator = '<?=$item->currency_separator?>';
+		</script>
+		
+		<div class="tour_total">
+		  <fieldset>
+			  <ol class="tour_receipt">
+			      <li class="info"><label class="total_pay">TOTAL TO PAY NOW</label><span class="total_pay_now" id="total_value"><?=$site->formatCurrency($complete_booking_total)?></span></li>
+			  </ol>
 		  </fieldset>
 	  </div>
-	  <!-- end of receipt section -->
-
 
 		<p class="notation">To finish your booking, please complete the following form. Please note that fields marked with "<em>*</em>" are required.</p>
 	
@@ -381,35 +548,36 @@
 	  <h2>Billing / Primary Contact Information</h2>
 	  <fieldset>
 	  	<ol>
-	    <li class="half"><label for="fname">First Name<em>*</em></label><input id="tour_first_name" name="tour_first_name" type="text" value="" /></li>
-	    <li class="half"><label for="lname">Last Name<em>*</em></label><input id="tour_last_name" name="tour_last_name" type="text" value="" /></li>
+	    <li class="half"><label for="tour_first_name">First Name<em>*</em></label><input id="tour_first_name" name="tour_first_name" type="text" value="" /></li>
+	    <li class="half"><label for="tour_last_name">Last Name<em>*</em></label><input id="tour_last_name" name="tour_last_name" type="text" value="" /></li>
 	
-	    <li class="half"><label for="address1">Address<em>*</em></label><input id="tour_address_1" name="tour_address_1" type="text" value="" /></li>
-	    <li class="half"><label for="address2">Address 2</label><input id="tour_address_2" name="tour_address_2" type="text" value="" /></li>
+	    <li class="half"><label for="tour_address_1">Address<em>*</em></label><input id="tour_address_1" name="tour_address_1" type="text" value="" /></li>
+	    <li class="half"><label for="tour_address_2">Address 2</label><input id="tour_address_2" name="tour_address_2" type="text" value="" /></li>
 	    
-	    <li class="half"><label for="city">City<em>*</em></label><input id="tour_city" name="tour_city" type="text" value="" /></li>
-	    <li class="half"><label for="postal">Zip/Postal Code<em>*</em></label><input id="tour_postal_code" name="tour_postal_code" type="text" value="" /></li>      
-
-	    <li class="half"><label for="country">Country<em>*</em></label>
+	    <li class="half"><label for="tour_city">City<em>*</em></label><input id="tour_city" name="tour_city" type="text" value="" /></li>
+	    <li class="half"><label for="tour_postal_code">Zip/Postal Code<em>*</em></label><input id="tour_postal_code" name="tour_postal_code" type="text" value="" /></li>
+			
+	    <li class="half"><label for="tour_country">Country<em>*</em></label>
 	    	<? $companyCountry = $site->getCompanyCountry(); ?>
 				<select name="tour_country" id="tour_country" />
-	    		<? foreach( $site->getRegionList() as $iso => $name ): ?>
+	    		<? foreach( $site->getRegionList() as $iso => $name ) { ?>
 	    			<option value="<?=$iso?>" <?=(($iso == $companyCountry) ? 'selected' : '')?>><?=ucwords($name)?></option>
-	    		<? endforeach; ?>
+	    		<? } ?>
 	    	</select>
 	    </li>
-
-	    <li class="half"><label for="states">State/Province</label>
-      <select id="tour_stateprov" style="display:<?=(($companyCountry != 'ca' && $companyCountry != 'us' && $companyCountry != 'au') ? 'none' : '')?>;"></select>
-      <input id="tour_stateprov_txt" name="tour_stateprov" type="text" value="" style="display:<?=(($companyCountry != 'ca' && $companyCountry != 'us' && $companyCountry != 'au') ? '' : 'none')?>;" />
-      </li>			
-			<li class="half"><label for="phone">Phone Number<em>*</em></label><input id="tour_phone_number" name="tour_phone_number" type="text" value="" /></li>
-	    <li class="half"><label for="email">Email Address<em>*</em></label><input id="tour_email_address" name="tour_email_address" type="email" value="" /></li>
+	    <li class="half"><label for="tour_stateprov">State/Province</label>
+	    	<select id="tour_stateprov" style="display:<?=(($companyCountry != 'ca' && $companyCountry != 'us' && $companyCountry != 'au') ? 'none' : '')?>;"></select>
+	    	<input id="tour_stateprov_txt" name="tour_stateprov" type="text" value="" style="display:<?=(($companyCountry != 'ca' && $companyCountry != 'us' && $companyCountry != 'au') ? '' : 'none')?>;" />
+      </li>
+	    
+	    <li class="half"><label for="tour_phone_number">Phone Number<em>*</em></label><input id="tour_phone_number" name="tour_phone_number" type="text" value="" /></li>
+	    <li class="half"><label for="tour_email_address">Email Address<em>*</em></label><input id="tour_email_address" name="tour_email_address" type="email" value="" /></li>
 	    </ol>
 	   </fieldset>
 		</div>
 		
-		<div class="payment_info" id="payment_info" style="<?=(($item->overall_total > 0) ? '' : 'display:none;')?>">
+	
+		<div class="payment_info" id="payment_info" style="<?=(($complete_booking_total > 0) ? '' : 'display:none;')?>">
 		<h2>Select Your Payment Method</h2>
 			<fieldset>
 				<ol>
@@ -418,7 +586,7 @@
 						<div style="float:left;">
 							
 							<table border="0" cellspacing="0" cellpadding="0" width="100%">
-						
+								
 							<? 
 								foreach( $site->getPaymentMethods() as $pay ) {
 								
@@ -451,9 +619,10 @@
 										
 									} else {
 										$pmc++;
+										$set_name = ($pay[name] == 'PayPal') ? '<img src="'.$site->path.'/images/logos/paypal.png" style="margin:0px;">' : $pay[name];
 										echo '<tr><td><input type="radio" name="payment_method" id="payment_method_'.$pmc.'" value="'.$pay[name].'" onclick="toggleCard();">&nbsp;&nbsp;</td>
 											<td style="font-size:18px; font-weight:bold; color:#666; margin-bottom:10px; height:35px;">
-												<label for="payment_method_'.$pmc.'">'.$pay[name].'</label>
+												<label for="payment_method_'.$pmc.'">'.$set_name.'</label>
 											</td>
 										</tr>';
 									}		
@@ -470,7 +639,7 @@
 								<? if($pay[name] == 'Credit Cards') { ?>
 									
 									<div id="payment_cards">
-										<iframe style="height:150px; width:345px; border:0px;" scrolling="no" frameborder="0" name="tour_payment" id="tour_payment" src="<?=$site->base?>/booking_payment.php">
+										<iframe style="height:170px; width:345px; border:0px;" scrolling="no" frameborder="0" name="tour_payment" id="tour_payment" src="<?=$site->base?>/booking_payment.php">
 										
 										</iframe>
 									</div>
@@ -509,13 +678,14 @@
 			
 			</fieldset>
 		</div>
+		
 	
-		<!--   make a lightbox popup for terms and conditions -->
+		<!--  make a lightbox popup for terms and conditions -->
 	  <div class="terms">
 	  <h2>Terms and Conditions</h2>
 	  <fieldset>
 	  <ol>
-	  	<li><input type="checkbox" class="checkbox" id="agree_terms" name="agree_terms" value="1" \>&nbsp;&nbsp;I agree to the <a href="javascript:void(0);" onclick="javascript:window.open('<?=$site->base?>/terms_popup.php', 'mywindow', 'menubar=1,resizable=1,scrollbars=1,width=800,height=600');">Terms and Condtions</a></li>
+	  	<li><input type="checkbox" class="checkbox" id="agree_terms" name="agree_terms" value="1" \>&nbsp;&nbsp;<label for="agree_terms">I agree to the</label> <a href="javascript:void(0);" onclick="javascript:window.open('<?=$site->base?>/terms_popup.php', 'mywindow', 'menubar=1,resizable=1,scrollbars=1,width=800,height=600');">Terms and Conditions</a></li>
 	  	<li class="payment_terms">
 	  		<div id="terms_credit_card" style="display:<? if(!$site->getPaymentMethods('Credit Cards')) { ?>none<? } ?>;">
 	  			<? if($site->getGateway() OR $site->isVendor()) { ?>
@@ -547,14 +717,15 @@
 	var response; // needs to be global to work in timeout
 	var paypalAccount = 0;
 
-	jQuery.tools.validator.localize("en", {
-		'[required]' : 'required',
-		':email' : 'enter a valid email'
-	});
-	
 	var ca_states = <?= json_encode( $site->getRegionList('ca') ); ?>;
 	var us_states = <?= json_encode( $site->getRegionList('us') ); ?>;
 	var au_states = <?= json_encode( $site->getRegionList('au') ); ?>;	
+	
+	// catch form submissions
+	jQuery('#book').submit(function (evt) {
+		evt.preventDefault();
+		submit_booking();
+	});
 	
 	jQuery('#tour_country').change(function() {
 		var country = jQuery(this).attr('value');
@@ -597,6 +768,12 @@
 		jQuery('#prompt').data("overlay").close();
 	}
 	
+	if (typeof String.prototype.trim != 'function') { // detect native implementation
+	  String.prototype.trim = function () {
+	    return this.replace(/^\s+/, '').replace(/\s+$/, '');
+	  };
+	}
+	
 	// change the modal dialog box or pass the user to the receipt depending on the response
 	function show_response()  {
 		
@@ -610,7 +787,7 @@
 			// this error should only come up in preview mode without a valid payment method set
 			var body = '<h2>Booking Error</h2>Sorry, you must have a payment method attached to your Rezgo Account in order to complete a booking.<br><br>Please go to "Settings > My Rezgo Account" to attach a payment method.<br><br><button type="button" class="close" onclick="close_modal();">Close This</button>';
 		} else {
-		
+			
 			// this section is mostly for debug handling
 			if(response.indexOf('STOP::') != -1) {	
 				var split = response.split('<br><br>');
@@ -623,7 +800,7 @@
 				var body = 'DEBUG-STOP ENCOUNTERED<br><br>' + split[0] + split[1];
 			} else {
 				// send the user to the receipt page
-				window.location.replace("<?=$site->base?>/complete/" + response);
+				window.location.replace("<?=$site->base?>/complete/" + response.trim());
 				return true; // stop the html replace
 			}
 		}
@@ -637,160 +814,160 @@
 		setTimeout('show_response();', 800);
 	}
 	
-	function start_validate() {
-		jQuery("#book").validator({ 
-			position: 'center left', 
-			offset: [-15, -70],
-			message: '<div id="rezgo_error"><em></em></div>' // em element is the arrow
-		}).submit(function(e) {
-			
-			// only activate on actual form submission, check payment info
-			if(toComplete == 1 && total != 0) {
-			
-				var force_error = 0;
-				
-				var payment_method = jQuery('input:radio[name=payment_method]:checked').val();				
-				
-				if(payment_method == 'Credit Cards') {
-					if(!jQuery('#tour_payment').contents().find('#name').val() || !jQuery('#tour_payment').contents().find('#pan').val()) {
-						force_error = 1;
-						jQuery('#tour_payment').contents().find('#payment_info').css('border-color', '#990000');
-					}
-				} else {
-					// other payment methods need their additional fiends filled
-					var id = jQuery('input:radio[name=payment_method]:checked').attr('id');
-					if(jQuery('#' + id + '_field').length != 0 && !jQuery('#' + id + '_field').val()) { // this payment method has additional data that is empty
-						force_error = 1;
-						jQuery('#' + id + '_container').css('border-color', '#990000');
-					}
-				}
-			}
-			
-			// when data is invalid 
-			if(e.isDefaultPrevented() || force_error) {
-				jQuery('#errors').fadeIn();
-			  jQuery.scrollTo('#errors');
-			  setTimeout("jQuery('#errors').fadeOut();", 4000);
-			  return false;
-			} else {
-				if(toComplete == 1) {
-					
-					jQuery('#prompt').html('<h2>Your booking is being completed</h2><br><center><img src="<?=$site->path?>/images/booking_load.gif"><br><br>Please wait a moment...</center>');
-				
-					jQuery('#prompt').overlay({
-						mask: {
-							color: '#FFFFFF',
-							loadSpeed: 200,
-							opacity: 0.75
-						},
-						closeOnEsc : false, 
-						closeOnClick: false
-					});
-					
-					// open the overlay this way, rather than load:true in the overlay itself
-					// so that it will be forced to open again even if it already exists
-					jQuery('#prompt').data("overlay").load();
-					
-					// set the action to book, in case paypal changed it to get it's payment token
-					jQuery('#rezgoAction').val('book'); 
-					
-					var payment_method = jQuery('input:radio[name=payment_method]:checked').val();
-					
-					if(payment_method == 'Credit Cards' && total != 0) {
-						// clear the existing credit card token, just in case one has been set from a previous attempt
-						jQuery('#tour_card_token').val('');
-						
-						// submit the card token request and wait for a response
-						jQuery('#tour_payment').contents().find('#payment').submit();
-						
-						// wait until the card token is set before continuing (with throttling)
-						
-						function check_card_token() {
-							var card_token = jQuery('#tour_card_token').val();
-							if(card_token == '') {
-								// card token has not been set yet, wait and try again
-								setTimeout(function() {
-									check_card_token();
-								}, 200);
-							} else {
-								
-								// the field is present? submit normally								
-								jQuery('#book').ajaxSubmit({ success: delay_response });
-								
-							}
-						}
-						
-						check_card_token();	
-					} else {
-											
-						// not a credit card payment (or $0) and everything checked out, submit via ajaxSubmit (jquery.form.js)					
-						jQuery('#book').ajaxSubmit({ success: delay_response });
-
-	 				}
-					
-					// return false to prevent normal browser submit and page navigation 
-    			return false; 
-    			
-				} else {
-					toComplete = 1;
-				
-					jQuery('#errors').fadeOut();
-				
-					document.getElementById("step_1").setAttribute("class", "off");
-					document.getElementById("step_2").setAttribute("class", "on");
-					
-					jQuery('#content_1').hide();
-					jQuery('#content_2').fadeIn();
-					
-					jQuery.scrollTo('#panel_full');
-					
-					document.getElementById("tour_first_name").setAttribute("required", "required");
-					document.getElementById("tour_last_name").setAttribute("required", "required");
-					
-					document.getElementById("tour_address_1").setAttribute("required", "required");
-					document.getElementById("tour_city").setAttribute("required", "required");
-					document.getElementById("tour_country").setAttribute("required", "required");
-					document.getElementById("tour_postal_code").setAttribute("required", "required");
-					
-					document.getElementById("tour_phone_number").setAttribute("required", "required");
-					document.getElementById("tour_email_address").setAttribute("required", "required");
-					
-					document.getElementById("agree_terms").setAttribute("required", "required");
-					
-					return false;
-				}
-			}
-		});
-
+	function validate_form() {
+		
+		var valid = jQuery("#book").valid();
+		
+		return valid;
 	}
 	
-	start_validate();
+	function error_booking() {
+		jQuery('#errors').fadeIn();
+		jQuery.scrollTo('#errors');
+		setTimeout("jQuery('#errors').fadeOut();", 4000);
+		return false;
+	}
+	
+	function submit_booking() {
+	
+		// do nothing if we are on step 1
+		if(toComplete == 0) return false;
+		
+		var validate_check = validate_form();
+		
+		// only activate on actual form submission, check payment info
+		if(toComplete == 1 && overall_total != 0) {
+		
+			var force_error = 0;
+			
+			var payment_method = jQuery('input:radio[name=payment_method]:checked').val();				
+			
+			if(payment_method == 'Credit Cards') {
+			
+				
+				if(!jQuery('#tour_payment').contents().find('#payment').valid()) {
+					force_error = 1;
+				}
+				
+			} else {
+				// other payment methods need their additional fiends filled
+				var id = jQuery('input:radio[name=payment_method]:checked').attr('id');
+				if(jQuery('#' + id + '_field').length != 0 && !jQuery('#' + id + '_field').val()) { // this payment method has additional data that is empty
+					force_error = 1;
+					jQuery('#' + id + '_container').css('border-color', '#990000');
+				}
+			}
+		}
+					
+		if(force_error || !validate_check) {
+			return error_booking();
+		} else {
+			if(toComplete == 1) {
+				
+				jQuery('#prompt').html('<h2>Your booking is being completed</h2><br><center><img src="<?=$site->path?>/images/booking_load.gif"><br><br>Please wait a moment...</center>');
+			
+				jQuery('#prompt').overlay({
+					mask: {
+						color: '#FFFFFF',
+						loadSpeed: 200,
+						opacity: 0.75
+					},
+					closeOnEsc : false, 
+					closeOnClick: false
+				});
+				
+				// open the overlay this way, rather than load:true in the overlay itself
+				// so that it will be forced to open again even if it already exists
+				jQuery('#prompt').data("overlay").load();
+				
+				// set the action to book, in case paypal changed it to get it's payment token
+				jQuery('#rezgoAction').val('book'); 
+				
+				var payment_method = jQuery('input:radio[name=payment_method]:checked').val();
+				
+				if(payment_method == 'Credit Cards' && overall_total != 0) {
+					// clear the existing credit card token, just in case one has been set from a previous attempt
+					jQuery('#tour_card_token').val('');
+					
+					// submit the card token request and wait for a response
+					jQuery('#tour_payment').contents().find('#payment').submit();
+					
+					// wait until the card token is set before continuing (with throttling)
+					
+					function check_card_token() {
+						var card_token = jQuery('#tour_card_token').val();
+						if(card_token == '') {
+							// card token has not been set yet, wait and try again
+							setTimeout(function() {
+								check_card_token();
+							}, 200);
+						} else {
+							
+							// the field is present? submit normally								
+							jQuery('#book').ajaxSubmit({ success: delay_response, error: function() {
+								var body = '<h2>Booking Error</h2><br>Sorry, the system has suffered an error that it can not recover from.<br><br>Please try again later.<br><br><button type="button" class="close" onclick="close_modal();">Close This</button>';
+								jQuery('#prompt').html(body);
+							}});
+							
+						}
+					}
+					
+					check_card_token();	
+				} else {
+										
+					// not a credit card payment (or $0) and everything checked out, submit via ajaxSubmit (jquery.form.js)					
+					jQuery('#book').ajaxSubmit({ success: delay_response, error: function() {
+						var body = '<h2>Booking Error</h2>Sorry, the system has suffered an error that it can not recover from.<br><br>Please try again later.<br><br><button type="button" class="close" onclick="close_modal();">Close This</button>';
+						jQuery('#prompt').html(body);
+					}});
+
+				}
+				
+				// return false to prevent normal browser submit and page navigation 
+				return false; 
+				
+			}
+		}
+		
+	}
+	
 	
 	function stepForward() {
-		start_validate();
-		jQuery('#book').submit();
+	
+		if(!validate_form()) return error_booking();
+	
+		toComplete = 1;
+				
+		jQuery('#errors').fadeOut();
+	
+		document.getElementById("step_1").setAttribute("class", "off");
+		document.getElementById("step_2").setAttribute("class", "on");
+		
+		jQuery('#content_1').hide();
+		jQuery('#content_2').fadeIn();
+		
+		jQuery.scrollTo('#panel_full');
+		
+		jQuery("#tour_first_name").addClass("required");
+		jQuery("#tour_last_name").addClass("required");
+		
+		jQuery("#tour_address_1").addClass("required");
+		jQuery("#tour_city").addClass("required");
+		jQuery("#tour_country").addClass("required");
+		jQuery("#tour_postal_code").addClass("required");
+		
+		jQuery("#tour_phone_number").addClass("required");
+		jQuery("#tour_email_address").addClass("required");
+		
+		jQuery("#agree_terms").addClass("required");
+		
 	}
 	
 	function stepBack() {
 		toComplete = 0;
-	
-		jQuery('#errors').fadeOut();
-	
-		document.getElementById("step_1").setAttribute("class", "on");
+		
 		document.getElementById("step_2").setAttribute("class", "off");
-		
-		document.getElementById("tour_first_name").removeAttribute("required");
-		document.getElementById("tour_last_name").removeAttribute("required");
-		
-		document.getElementById("tour_address_1").removeAttribute("required");
-		document.getElementById("tour_city").removeAttribute("required");
-		document.getElementById("tour_country").removeAttribute("required");
-		document.getElementById("tour_postal_code").removeAttribute("required");
-		
-		document.getElementById("tour_phone_number").removeAttribute("required");
-		document.getElementById("tour_email_address").removeAttribute("required");
-		
-		document.getElementById("agree_terms").removeAttribute("required");
+		document.getElementById("step_1").setAttribute("class", "on");
 		
 		<? if($site->getPaymentMethods('PayPal')) { ?>
 			paypalAccount = 0; // set to 0 to let the page know we need an account
@@ -805,15 +982,21 @@
 			jQuery('#paypal_payer_id').val('');		
 		<? } ?>
 		
-		<? if($site->getPaymentMethods('Credit Cards')) { ?>
-			//document.getElementById("tour_card_name").removeAttribute("required");
-			//document.getElementById("tour_card_number").removeAttribute("required");
-		<? } ?>
-		
-		start_validate();
-		
 		jQuery('#content_2').hide();
 		jQuery('#content_1').fadeIn();
+		
+		jQuery("#tour_first_name").removeClass("required");
+		jQuery("#tour_last_name").removeClass("required");
+		
+		jQuery("#tour_address_1").removeClass("required");
+		jQuery("#tour_city").removeClass("required");
+		jQuery("#tour_country").removeClass("required");
+		jQuery("#tour_postal_code").removeClass("required");
+		
+		jQuery("#tour_phone_number").removeClass("required");
+		jQuery("#tour_email_address").removeClass("required");
+		
+		jQuery("#agree_terms").removeClass("required");
 	}
 	
 	function toggleCard() {
@@ -873,13 +1056,12 @@
 			setTimeout(function() {
 				var id = jQuery('input[name=payment_method]:checked').attr('id');
 				jQuery('#' + id + '_box').fadeIn();
-				jQuery('#' + id + '_field').attr('disabled', '');
+				jQuery('#' + id + '_field').attr('disabled', false);
 			}, 450);
 			
 			document.getElementById("terms_credit_card").style.display = 'none';
 			document.getElementById("terms_other").style.display = '';
 		
-			start_validate();
 		}
 		
 	}
@@ -904,8 +1086,6 @@
 				if(token.indexOf('STOP::') != -1) {
 					var split = token.split('<br><br>');
 					
-					//alert("DEBUG-STOP ENCOUNTERED\n\n" + split[0] + "\n\nToken Returned:" + split[1] + " (close this to proceed)");
-					
 					if(split[1] == '0') {
 						alert('The system encountered an error with PayPal. Please try again in a few minutes or select another payment method.');
 						return false;
@@ -914,7 +1094,7 @@
 					token = split[1];
 				}
 				
-				dg.startFlow("https://www.paypal.com/incontext?token=" + token);
+				dg.startFlow("https://www.paypal.com/incontext?token=" + token.trim());
 				
 			}
 		});
@@ -960,7 +1140,7 @@
 	    if (this.type == 'checkbox' && this.checked == true) {
 	    	var split = this.id.split("|");
 	    	// if the ID contains a price value then add it
-	    	if(split[2]) add_element(split[0], split[1], split[2]);
+	    	if(split[2]) add_element(split[0], split[1], split[2], split[3]);
 	    }
 	   });
 	};
@@ -973,7 +1153,15 @@
 
 <div id="rezgo_footer">
 
+<!-- Rezgo logo -->
+<div id="rezgo_logo"><a href="http://www.rezgo.com" target="_blank" title="powered by rezgo">powered by<img src="<?=$site->path?>/images/logo_rezgo.gif" border="0" alt="Rezgo" /></a></div>
+<!-- Rezgo logo -->
+
 </div>
 
-
 </div><!--end rezgo wrp-->
+
+<script src="https://www.paypalobjects.com/js/external/dg.js"></script>
+<script>var dg = new PAYPAL.apps.DGFlow();</script>
+
+

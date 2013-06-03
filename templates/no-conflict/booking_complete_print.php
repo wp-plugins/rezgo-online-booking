@@ -8,12 +8,12 @@
 
 <html>
 <head>
-
+	<meta name="robots" content="noindex, nofollow">
 </head>
 <body>
 
 <link media="all" href="<?=$site->path?>/header.css" type="text/css" rel="stylesheet">
-<link media="all" href="<?=$site->path?>/print.css" type="text/css" rel="stylesheet">
+<link media="all" href="<?=$site->path?>/pdf.css" type="text/css" rel="stylesheet">
 
 <div id="rezgo" class="wrp_book">	
 	
@@ -36,7 +36,7 @@
   	<li class="info"><label>Transaction #</label><span><?=$booking->trans_num?></span></li>
   	<li class="info"><label>You have booked</label><span><?=$booking->tour_name?><br /><?=$booking->option_name?></span></li>
 
-    <li class="info"><label>Date</label><span><?=date("M d, Y", (int)$booking->date)?></span></li>
+    <li class="info"><label>Booked For</label><span><?=date("M d, Y", (int)$booking->date)?></span></li>
     <li class="info"><label>Duration</label><span><?=$item->duration?></span></li>
     <li class="info"><label>Location</label>
     	<span>
@@ -70,8 +70,12 @@
     <? if($booking->overall_total > 0) { ?>
     	<li class="info"><label>Payment Method</label><span><?=$booking->payment_method?></span></li>
     	<? if($booking->payment_method == 'Credit Cards') { ?><li class="info"><label>Card Number</label><span><?=$booking->card_number?></span></li><? } ?>
+   	
+    	<? if($site->exists($booking->payment_method_add->label)) { ?><li class="info"><label><?=$booking->payment_method_add->label?></label><span><?=$booking->payment_method_add->value?></span></li><? } ?>
    	<? } ?>
-    
+   	
+   	<li class="info"><label>Payment Status</label><span><?=(($booking->status == 1) ? 'CONFIRMED' : '')?><?=(($booking->status == 2) ? 'PENDING' : '')?><?=(($booking->status == 3) ? 'CANCELLED' : '')?></span></li>
+   	
     <? if($site->exists($booking->trigger_code)) { ?><li class="info"><label>Promotional Code</label><span><?=$booking->trigger_code?></span></li><? } ?>
     <li class="info last"><label>Charges</label>
 
@@ -206,10 +210,10 @@
 						
 						Rezgo.com<br>
 						Attn: Partner Bookings<br>
-						92 Lonsdale Avenue<br>
-						Suite 200<br>
+						333 Brooksbank Avenue<br>
+						Suite 718<br>
 						North Vancouver, BC<br>
-						Canada V7M 2E6<br>
+						Canada V7J 3V8<br>
 						(604) 983-0083<br>
 						bookings@rezgo.com
 						
@@ -259,7 +263,9 @@
 
 </div><!-- end of panel_full--> 
 <div class="clear"></div> <!-- do not take this out -->
-
+<!-- Rezgo logo DO NOT DELETE -->
+<div id="rezgo_logo"><a href="http://www.rezgo.com" target="_blank" title="powered by rezgo">powered by<img src="<?=$site->path?>/images/logo_rezgo.gif" border="0" alt="Rezgo" /></a></div>
+<!-- Rezgo logo DO NOT DELETE -->
 </div><!--end rezgo wrp-->
 
 <script>window.print();</script>

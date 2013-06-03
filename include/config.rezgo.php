@@ -44,7 +44,7 @@
 	*/
 	
 	// Send errors to firebug via console (get firebug: http://getfirebug.com/)
-	define(	"REZGO_FIREBUG_ERRORS",			0																							);
+	define(	"REZGO_FIREBUG_ERRORS",			1																							);
 	
 	// Display errors if they occur, disabled if you just want to send errors to firebug
 	define(	"REZGO_DISPLAY_ERRORS",			1																							);
@@ -65,7 +65,7 @@
 	define(	"REZGO_SWITCH_COMMIT",			1																							);
 	
 	// Stop the commit request so booking AJAX responses can be checked
-	define(	"REZGO_STOP_COMMIT",				0																							);
+	define(	"REZGO_STOP_COMMIT",				1																							);
 	
 	// Display the XML inline with the regular page content
 	define(	"REZGO_DISPLAY_XML",				0																							);

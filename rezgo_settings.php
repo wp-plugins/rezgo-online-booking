@@ -57,7 +57,7 @@
 				$_POST['rezgo_secure_url'] = str_replace("https://", "", $_POST['rezgo_secure_url']);
 			}
 			
-			if(!$_POST['rezgo_result_num']) $_POST['rezgo_result_num'] = 20;
+			if(!$_POST['rezgo_result_num']) $_POST['rezgo_result_num'] = 10;
 			
 			update_option( "rezgo_cid", trim($_POST['rezgo_cid']) );
 			update_option( "rezgo_api_key", trim($_POST['rezgo_api_key']) );
@@ -255,11 +255,11 @@
 				
 				<dl>
 					
-					<dt class=note>How many results do you want to show on each page? We suggest 20. Higher numbers may have an impact on performance.</dt>
+					<dt class=note>How many results do you want to show on each page? We suggest 10. Higher numbers may have an impact on performance.</dt>
 					<br><br>';
 					
 					$results_num = get_option('rezgo_result_num');
-					if(!$results_num) $results_num = 20;
+					if(!$results_num) $results_num = 10;
 					
 					$template_url = str_replace('https://', '', REZGO_DIR);
 					$template_url = str_replace('http://', '', $template_url);
