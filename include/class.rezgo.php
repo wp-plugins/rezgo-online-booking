@@ -4,13 +4,13 @@
 		This is the Rezgo parser class, it handles processing for the Rezgo XML.
 		
 		VERSION:
-				1.6.1
+				1.7
 		
 		- Documentation and latest version
-				http://support.rezgo.com/developers/rezgo-open-source-php-parser.html
+				http://support.rezgo.com/customer/portal/articles/1153719-open-source-php-parser
 		
 		- Finding your Rezgo CID and API KEY
-				http://support.rezgo.com/developers/xml-api-key
+				http://support.rezgo.com/customer/portal/articles/831818-xml-api-key
 		
 		- Discussion and Feedback
 				http://getsatisfaction.com/rezgo/products/rezgo_rezgo_open_source_php_parser
@@ -18,7 +18,7 @@
 		AUTHOR:
 				Kevin Campbell
 		
-		Copyright (c) 2012, Rezgo (A Division of Sentias Software Corp.)
+		Copyright (c) 2012-2013, Rezgo (A Division of Sentias Software Corp.)
 		All rights reserved.
 		
 		Redistribution and use in source form, with or without modification,
@@ -49,7 +49,7 @@
 
 	class RezgoSite {
 	
-		var $version = '1.6.1';
+		var $version = '1.7';
 	
 		var $xml_path;
 		
@@ -99,10 +99,11 @@
 		var $commit_response;
 		var $contact_response;
 		
-		var $tour_prices;
 		var $tour_forms;
 		
 		var $all_required;
+		
+		var $cart = array();
 		
 		// debug and error stacks
 		var $error_stack;
@@ -113,14 +114,14 @@
 		// this allows us to load the object globalls for included templates.
 		// ------------------------------------------------------------------------------
 		function __construct($secure=null) {
-			$handlers = ob_list_handlers();
-			if(count($handlers) < 1 && !$this->config('REZGO_SKIP_BUFFER')) ob_start();
-			
+			if(!$this->config('REZGO_SKIP_BUFFER')) ob_start();
+		
 			// check the config file to make sure it's loaded
 			if(!$this->config('REZGO_CID')) $this->error('REZGO_CID definition missing, check config file', 1);
 		
 			// assemble XML address
 			$this->xml_path = REZGO_XML.'/xml?transcode='.REZGO_CID.'&key='.REZGO_API_KEY;
+			$this->advanced_xml_path = REZGO_XML.'/xml?xml='.urlencode('<request><transcode>'.REZGO_CID.'</transcode><key>'.REZGO_API_KEY.'</key>');
 			
 			// assemble template and url path
 			$this->path = REZGO_DIR.'/templates/'.REZGO_TEMPLATE;
@@ -141,8 +142,7 @@
 			if($_REQUEST['end_date']) {
 				if(strtotime($_REQUEST['end_date']) == 0) unset($_REQUEST['end_date']);
 			}
-		
-		
+			
 			// handle the refID if one is set
 			if($_REQUEST['refid'] || $_REQUEST['ttl'] || $_COOKIE['rezgo_refid_val'] || $_SESSION['rezgo_refid_val']) {
 				if($_REQUEST['refid'] || $_REQUEST['ttl']) {
@@ -154,7 +154,7 @@
 					$new_header = preg_replace("/&?ttl=[^&\/]*/", "", $new_header);
 					$new_header = str_replace("?&", "?", $new_header);
 					
-					if($new_header{(strlen($new_header)-1)} == '?') $new_header{(strlen($new_header)-1)} = '';
+					if(substr($new_header, -1) == '?') { $new_header = substr($new_header, 0, -1); }
 					
 					$refid = $_REQUEST['refid'];
 					$ttl = ($_REQUEST['ttl']) ? $_REQUEST['ttl'] : 7200;
@@ -175,25 +175,32 @@
 				}
 				
 				if(isset($new_header)) $this->sendTo((($_SERVER['HTTPS']) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].$new_header);
-			}		
+			}	
 			
 			// handle the promo code if one is set
 			if(isset($_REQUEST['promo']) || $_COOKIE['rezgo_promo'] || $_SESSION['rezgo_promo']) {
+				
 				$ttl = 1209600; // two weeks is the default time-to-live for the promo cookie
 				
 				if(isset($_REQUEST['promo']) && !$_REQUEST['promo']) {
-					$_REQUEST['promo'] = $_COOKIE['rezgo_promo']; // force a request
+					$_REQUEST['promo'] = ' '; // force a request below
 					$ttl = -1; // set the ttl to -1, removing the promo code
 				}
 				
 				if($_REQUEST['promo']) {
+					if($_REQUEST['promo'] == ' ') unset($_REQUEST['promo']);
+				
 					$new_header = $_SERVER['REQUEST_URI'];
 					
 					// remove the promo information wherever it is
 					$new_header = preg_replace("/&?promo=[^&\/]*/", "", $new_header);
 					$new_header = str_replace("?&", "?", $new_header);
 					
-					if($new_header{(strlen($new_header)-1)} == '?') $new_header{(strlen($new_header)-1)} = '';
+					// in case the format is /promo/text and the htaccess isn't reformatting it for above
+					$new_header = preg_replace("/promo\/[^\/]*/", "", $new_header);
+					$new_header = str_replace("//", "/", $new_header);
+					
+					if(substr($new_header, -1) == '?') { $new_header = substr($new_header, 0, -1); }
 					
 					$promo = $_REQUEST['promo'];
 				} 
@@ -202,7 +209,7 @@
 				
 				setcookie("rezgo_promo", $promo, time() + $ttl, '/', $_SERVER['SERVER_NAME']);
 				
-				// we need to set the session here before we header the user off or the old session will override the new refid each time
+				// we need to set the session here before we header the user off or the old session will override the new promo code each time
 				if($ttl > 0) {
 					$_SESSION['rezgo_promo'] = $promo;
 				} else {
@@ -212,9 +219,55 @@
 				if(isset($new_header)) $this->sendTo((($_SERVER['HTTPS']) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].$new_header);				
 			}
 			
+			// handle the add to cart request if one is set
+			if(is_array($_REQUEST['add']) || $_COOKIE['rezgo_cart_'.REZGO_CID] || $_SESSION['rezgo_cart_'.REZGO_CID] || $_REQUEST[order] == 'clear') {
+				
+				$ttl = (REZGO_CART_TTL > 0 || REZGO_CART_TTL === 0) ? REZGO_CART_TTL : 86400;
+				
+				$clear = 0;
+				if($_REQUEST['order'] == 'clear') {
+				
+					$new_header = $_SERVER['REQUEST_URI'];
+					
+					// remove the clear cart information wherever it is
+					$new_header = preg_replace("/&?order=clear/", "", $new_header);
+					$new_header = str_replace("?&", "?", $new_header);
+					
+					if(substr($new_header, -1) == '?') { $new_header = substr($new_header, 0, -1); }
+					
+					$this->clearCart();
+					
+					$clear = 1;
+				}
+				
+				if(is_array($_REQUEST['add'])) {
+				
+					if(!$new_header) $new_header = urldecode($_SERVER['REQUEST_URI']); //urldecode is needed to catch the [ marks on the array
+					
+					// remove the cart information wherever it is
+					$new_header = preg_replace("/&?add\[[^&\/]*\]=[^&\/]*/", "", $new_header);
+					$new_header = str_replace("?&", "?", $new_header);
+					
+					if(substr($new_header, -1) == '?') { $new_header = substr($new_header, 0, -1); }
+					
+					$cart = $this->addToCart($_REQUEST['add'], $clear);
+					
+				}
+				elseif($_SESSION['rezgo_cart_'.REZGO_CID]) { $cart = $_SESSION['rezgo_cart_'.REZGO_CID]; }
+				elseif($_COOKIE['rezgo_cart_'.REZGO_CID]) { $cart = unserialize(stripslashes($_COOKIE['rezgo_cart_'.REZGO_CID])); }
+				
+				setcookie("rezgo_cart_".REZGO_CID, serialize($cart), time() + $ttl, '/', $_SERVER['SERVER_NAME']);
+					
+				// we need to set the session here before we header the user off or the old session will override the new cart each time
+				$_SESSION['rezgo_cart_'.REZGO_CID] = $cart;
+				
+				if(isset($new_header)) $this->sendTo((($_SERVER['HTTPS']) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].$new_header);
+			}
+			
 			// registering global events, these can be manually changed later with the same methods
 			$this->setRefId($_COOKIE['rezgo_refid_val']);
 			$this->setPromoCode($_COOKIE['rezgo_promo']);
+			$this->setShoppingCart($_COOKIE['rezgo_cart_'.REZGO_CID]);
 		}
 		
 		function config($arg) {
@@ -241,13 +294,13 @@
 			$stack = debug_backtrace();
 			$stack = $stack[count($stack)-1]; // get the origin point
 			
-			$message = '[XML backtrace: '.$message.' for '.$stack['class'].'::'.$stack['function'].' in '.$stack['file'].' on line '.$stack['line'].']';
+			$message = '[XML backtrace: '.urldecode($message).' for '.$stack['class'].'::'.$stack['function'].' in '.$stack['file'].' on line '.$stack['line'].']';
 			if($this->config('REZGO_FIREBUG_XML')) {
-				if($i == 'commit' && $this->config('REZGO_SWITCH_COMMIT')) { if($this->config('REZGO_STOP_COMMIT')) { echo 'STOP::'.$message.'<br><br>'; } }
+				if(($i == 'commit' || $i == 'commitOrder') && $this->config('REZGO_SWITCH_COMMIT')) { if($this->config('REZGO_STOP_COMMIT')) { echo $_SESSION['error_catch'] = 'STOP::'.$message.'<br><br>'; } }
 				else { echo '<script>if(window.console != undefined) { console.info("'.addslashes($message).'"); }</script>'; }
 			}
 			if($this->config('REZGO_DISPLAY_XML'))  {
-				if($i == 'commit' && $this->config('REZGO_SWITCH_COMMIT')) { die('STOP::'.$message); }
+				if(($i == 'commit' || $i == 'commitOrder') && $this->config('REZGO_SWITCH_COMMIT')) { die('STOP::'.$message); }
 				else { echo '<textarea rows="2" cols="25">'.$message.'</textarea>'; }
 			}
 		}
@@ -294,7 +347,7 @@
 		// ------------------------------------------------------------------------------
 		// format a currency response to the standards of this company
 		// ------------------------------------------------------------------------------
-		function formatCurrency($num, &$obj=null, $hide=null) {
+		function formatCurrency($num, &$obj=null) {
 			if(!$obj) $obj = $this->getItem();
 			return (($hide) ? '' : $obj->currency_symbol).number_format((float)$num, (int)$obj->currency_decimals, '.', (string)$obj->currency_separator);			
 		}
@@ -330,7 +383,12 @@
 		// Save tour search info
 		// ------------------------------------------------------------------------------
 		function saveSearch() {
-			setcookie("rezgo_search", $_SERVER['REQUEST_URI'], strtotime('now +1 week'), '/', $_SERVER['SERVER_NAME']);
+			$search_array = array('pg', 'start_date', 'end_date', 'tags', 'search_in', 'search_for');
+			
+			foreach($search_array as $v) { if($_REQUEST[$v]) $search[] = $v.'='.rawurlencode($_REQUEST[$v]); }
+			
+			if($search) $search = '?'.implode("&", $search);
+			setcookie("rezgo_search", $search, strtotime('now +1 week'), '/', $_SERVER['SERVER_NAME']);
 		}
 		
 		// ------------------------------------------------------------------------------
@@ -353,6 +411,7 @@
 					} else {
 						$request = $_SERVER['REQUEST_URI'];
 					}
+					
 					$this->sendTo($this->secure.$this->secureURL().$request); 
 				} 
 			} else { 
@@ -384,7 +443,7 @@
 			
 			$filename = ($fullpath) ? $req : $path.$req.$ext;
 			
-			if(is_file($filename)) {
+			if (is_file($filename)) {
         ob_start();
         include $filename;
         $contents = ob_get_contents();
@@ -475,15 +534,15 @@
 				$this->getPage($i.'&action=report');
 				
 				// send the user to the fatal error page
-				if($this->config(REZGO_FATAL_ERROR_PAGE)) {
-					$this->sendTo(REZGO_FATAL_ERROR_PAGE);
+				if(REZGO_FATAL_ERROR_PAGE) {
+					$this->sendTo($this->base.REZGO_FATAL_ERROR_PAGE);
 				}
 			}
 		
 			return $res;
 		}
 		
-		function XMLRequest($i, $arguments=null) {
+		function XMLRequest($i, $arguments=null, $advanced=null) {
 		
 			if($i == 'headers') {
 				if(!$this->headers_response) {
@@ -601,6 +660,18 @@
 					}
 				}
 			}
+			// !new commit mode
+			if($i == 'commitOrder') {
+				$query = 'https://'.$this->advanced_xml_path.urlencode('<instruction>commit</instruction>'.$arguments.'</request>');
+				
+				$xml = $this->fetchXML($query);
+				
+				if($xml) {
+					foreach($xml as $k => $v) {
+						$this->commit_response->$k = trim((string)$v);	
+					}
+				}
+			}
 			// !i=contact
 			if($i == 'contact') {
 				$query = 'https://'.$this->xml_path.'&i=contact&'.$arguments;
@@ -637,6 +708,10 @@
 		
 		function setPromoCode($id) {
 			$this->promo_code = urlencode($id);
+		}
+		
+		function setShoppingCart($array) {
+			$this->cart = unserialize(stripslashes($array));
 		}
 		
 		function setPageTitle($str) {
@@ -689,12 +764,17 @@
 		
 		function getTriggerState() {
 			$this->XMLRequest(headers);
-			return $this->headers_response->triggers;
+			return $this->exists($this->headers_response->triggers);
 		}
 		
 		function getBookNow() {
 			$this->XMLRequest(headers);
 			return $this->headers_response->book_now;
+		}
+		
+		function getCartState() {
+			$this->XMLRequest(headers);
+			return ((int) $this->headers_response->cart == 1) ? 1 : 0;
 		}
 		
 		function getTwitterName() {
@@ -865,6 +945,7 @@
 				
 				for($d=1; $d<$start_offset; $d++) {
 					$obj->day = $last_display;
+					$obj->lead = 1; // mark as lead up day, so it's not counted in getCalendarDays($day) calls
 					$this->calendar_days[] = $obj;				
 					$last_display++;
 					unset($obj);
@@ -890,7 +971,7 @@
 							}
 						}
 					} else {
-						if($xml->day-$xd->item) {
+						if($xml->day->$xd->item) {
 						$obj->items[0]->uid = $xml->day->$xd->item->uid;
 						$obj->items[0]->name = $xml->day->$xd->item->name;
 						$obj->items[0]->availability = $xml->day->$xd->item->attributes()->value;
@@ -944,7 +1025,7 @@
 		function getCalendarDays($day=null) {
 			if($day) {
 				foreach($this->calendar_days as $v) {
-					if((int)$v->day == $day) {
+					if((int)$v->day == $day && !(int)$v->lead) {
 						$day_response = $v; break;
 					}
 				}
@@ -971,7 +1052,7 @@
 			if(!$a || $a == $_REQUEST) {
 				if($_REQUEST['search_for']) $str .= ($_REQUEST['search_in']) ? '&t='.urlencode($_REQUEST['search_in']) : '&t=smart';	
 				if($_REQUEST['search_for']) $str .= '&q='.urlencode(stripslashes($_REQUEST['search_for']));
-				if($_REQUEST['tags']) $str .= '&f[tags]=*'.urlencode($_REQUEST['tags']).'*';
+				if($_REQUEST['tags']) $str .= '&f[tags]='.urlencode($_REQUEST['tags']);
 				
 				if($_REQUEST['cid']) $str .= '&f[cid]='.urlencode($_REQUEST['cid']); // vendor only
 				
@@ -1056,69 +1137,67 @@
 			if(!$obj) $obj = $this->getItem();
 			$com = (string) $obj->com;
 			
-			if(!$this->tour_prices[$com]) {	
-				$c=0;
-				$all_required = 1;
-				if($this->exists($obj->date->price_adult)) {
-					$ret[$c]->name = 'adult';
-					$ret[$c]->label = (string) $obj->adult_label;
-					$ret[$c]->required = (string) $obj->adult_required;
+			$c=0;
+			$all_required = 1;
+			if($this->exists($obj->date->price_adult)) {
+				$ret[$c]->name = 'adult';
+				$ret[$c]->label = (string) $obj->adult_label;
+				$ret[$c]->required = (string) $obj->adult_required;
+				if(!$ret[$c]->required) $all_required = 0;
+				($obj->date->base_prices->price_adult) ? $ret[$c]->base = (string) $obj->date->base_prices->price_adult : 0;
+				$ret[$c]->price = (string) $obj->date->price_adult;
+				$ret[$c++]->total = (string) $obj->total_adult;
+			}
+			if($this->exists($obj->date->price_child)) {
+				$ret[$c]->name = 'child';
+				$ret[$c]->label = (string) $obj->child_label;
+				$ret[$c]->required = (string) $obj->child_required;
+				if(!$ret[$c]->required) $all_required = 0;
+				($obj->date->base_prices->price_child) ? $ret[$c]->base = (string) $obj->date->base_prices->price_child : 0;
+				$ret[$c]->price = (string) $obj->date->price_child;
+				$ret[$c++]->total = (string) $obj->total_child;
+			}
+			if($this->exists($obj->date->price_senior)) {
+				$ret[$c]->name = 'senior';
+				$ret[$c]->label = (string) $obj->senior_label;
+				$ret[$c]->required = (string) $obj->senior_required;
+				if(!$ret[$c]->required) $all_required = 0;
+				($obj->date->base_prices->price_senior) ? $ret[$c]->base = (string) $obj->date->base_prices->price_senior : 0;
+				$ret[$c]->price = (string) $obj->date->price_senior;
+				$ret[$c++]->total = (string) $obj->total_senior;
+			}	
+			
+			for($i=4; $i<=9; $i++) {
+				$val = 'price'.$i;
+				if($this->exists($obj->date->$val)) {
+					$ret[$c]->name = 'price'.$i;
+					$val = 'price'.$i.'_label';
+					$ret[$c]->label = (string) $obj->$val;
+					$val = 'price'.$i.'_required';
+					$ret[$c]->required = (string) $obj->$val;
 					if(!$ret[$c]->required) $all_required = 0;
-					($obj->date->base_prices->price_adult) ? $ret[$c]->base = (string) $obj->date->base_prices->price_adult : 0;
-					$ret[$c]->price = (string) $obj->date->price_adult;
-					$ret[$c++]->total = (string) $obj->total_adult;
-				}
-				if($this->exists($obj->date->price_child)) {
-					$ret[$c]->name = 'child';
-					$ret[$c]->label = (string) $obj->child_label;
-					$ret[$c]->required = (string) $obj->child_required;
-					if(!$ret[$c]->required) $all_required = 0;
-					($obj->date->base_prices->price_child) ? $ret[$c]->base = (string) $obj->date->base_prices->price_child : 0;
-					$ret[$c]->price = (string) $obj->date->price_child;
-					$ret[$c++]->total = (string) $obj->total_child;
-				}
-				if($this->exists($obj->date->price_senior)) {
-					$ret[$c]->name = 'senior';
-					$ret[$c]->label = (string) $obj->senior_label;
-					$ret[$c]->required = (string) $obj->senior_required;
-					if(!$ret[$c]->required) $all_required = 0;
-					($obj->date->base_prices->price_senior) ? $ret[$c]->base = (string) $obj->date->base_prices->price_senior : 0;
-					$ret[$c]->price = (string) $obj->date->price_senior;
-					$ret[$c++]->total = (string) $obj->total_senior;
-				}	
-				
-				for($i=4; $i<=9; $i++) {
 					$val = 'price'.$i;
-					if($this->exists($obj->date->$val)) {
-						$ret[$c]->name = 'price'.$i;
-						$val = 'price'.$i.'_label';
-						$ret[$c]->label = (string) $obj->$val;
-						$val = 'price'.$i.'_required';
-						$ret[$c]->required = (string) $obj->$val;
-						if(!$ret[$c]->required) $all_required = 0;
-						$val = 'price'.$i;
-						($obj->date->base_prices->$val) ? $ret[$c]->base = (string) $obj->date->base_prices->$val : 0;
-						$ret[$c]->price = (string) $obj->date->$val;
-						$val = 'total_price'.$i;
-						$ret[$c++]->total = (string) $obj->$val;
-					}
+					($obj->date->base_prices->$val) ? $ret[$c]->base = (string) $obj->date->base_prices->$val : 0;
+					$ret[$c]->price = (string) $obj->date->$val;
+					$val = 'total_price'.$i;
+					$ret[$c++]->total = (string) $obj->$val;
 				}
 				
 				$this->all_required = $all_required;
-				
-				$this->tour_prices[$com] = $ret;
 			}
 			
-			return (array) $this->tour_prices[$com];
+			return (array) $ret;
 		}
 		
 		function getTourRequired() {
 			return ($this->all_required) ? 0 : 1;
 		}
 		
-		function getTourPriceNum(&$obj=null) {
+		function getTourPriceNum(&$obj=null, $order=null) {
 			if(!$obj) $obj = $this->getItem();
-			for($n=1; $n<=$_REQUEST[$obj->name.'_num']; $n++) {
+			// get the value from either the order object or the _REQUEST var
+			$val = (is_object($order)) ? $order->{$obj->name.'_num'} : $_REQUEST[$obj->name.'_num'];
+			for($n=1; $n<=$val; $n++) {
 				$ret[] = $n;
 			}
 			return (array) $ret;
@@ -1192,14 +1271,15 @@
 			return (array) $ret;		
 		}
 		
-		function getTourForms($type, &$obj=null) {
+		function getTourForms($type='primary', &$obj=null) {
 			if(!$obj) $obj = $this->getItem();
 			$com = (string) $obj->com;
+			$uid = (string) $obj->uid;
 			
 			$type = strtolower($type);
 			if($type != 'primary' && $type != 'group') $this->error('unknown type specified, expecting "primary" or "group"');
 
-			if(!$this->tour_forms[$com]) {
+			if(!$this->tour_forms[$com.'-'.$uid]) {
 				if($obj->forms) {
 					if($obj->forms->form[0]) {
 						foreach($obj->forms->form as $f) {
@@ -1254,10 +1334,10 @@
 					}
 				}
 				
-				$this->tour_forms[$com] = $res;
+				$this->tour_forms[$com.'-'.$uid] = $res;
 			}
 			
-			return (array) $this->tour_forms[$com][$type];
+			return (array) $this->tour_forms[$com.'-'.$uid][$type];
 		}
 		
 		function getTagSizes() {
@@ -1516,8 +1596,8 @@
 			
 			if($arg) $res[] = $arg; // extra XML options
 			
-			($r['date']) ? $res[] = 'date='.urlencode($r['date']) : $this->error('commit element "date" is empty', 1);
-			($r['book']) ? $res[] = 'book='.urlencode($r['book']) : $this->error('commit element "book" is empty', 1);
+			($r['date']) ? $res[] = 'date='.urlencode($r['date']) : 0;
+			($r['book']) ? $res[] = 'book='.urlencode($r['book']) : 0;
 			
 			($r['trigger_code']) ? $res[] = 'trigger_code='.urlencode($r['trigger_code']) : 0;
 			
@@ -1586,6 +1666,121 @@
 			return $this->commit_response;
 		}
 		
+		// ------------------------------------------------------------------------------
+		// Create an outgoing commit request based on the CART data
+		// ------------------------------------------------------------------------------
+		function sendBookingOrder($var=null, $arg=null) {
+			$r = ($var) ? $var : $_REQUEST;
+			
+			if($arg) $res[] = $arg; // extra XML options
+			
+			if(!is_array($r['booking'])) $this->error('sendBookingOrder failed. Booking array was not found', 1);
+			
+			foreach($r['booking'] as $b) {
+			
+				$res[] = '<booking>';
+			
+				($b['date']) ? $res[] = '<date>'.urlencode($b['date']).'</date>' : $this->error('sendBookingOrder failed. Commit element "date" is empty', 1);
+				($b['book']) ? $res[] = '<book>'.urlencode($b['book']).'</book>' : $this->error('sendBookingOrder failed. Commit element "book" is empty', 1);
+				
+				($b['adult_num']) ? $res[] = '<adult_num>'.urlencode($b['adult_num']).'</adult_num>' : 0;
+				($b['child_num']) ? $res[] = '<child_num>'.urlencode($b['child_num']).'</child_num>' : 0;
+				($b['senior_num']) ? $res[] = '<senior_num>'.urlencode($b['senior_num']).'</senior_num>' : 0;
+				($b['price4_num']) ? $res[] = '<price4_num>'.urlencode($b['price4_num']).'</price4_num>' : 0;
+				($b['price5_num']) ? $res[] = '<price5_num>'.urlencode($b['price5_num']).'</price5_num>' : 0;
+				($b['price6_num']) ? $res[] = '<price6_num>'.urlencode($b['price6_num']).'</price6_num>' : 0;
+				($b['price7_num']) ? $res[] = '<price7_num>'.urlencode($b['price7_num']).'</price7_num>' : 0;
+				($b['price8_num']) ? $res[] = '<price8_num>'.urlencode($b['price8_num']).'</price8_num>' : 0;
+				($b['price9_num']) ? $res[] = '<price9_num>'.urlencode($b['price9_num']).'</price9_num>' : 0;
+				
+				if($b['tour_group']) {
+					
+					$res[] = '<tour_group>';
+					
+					foreach((array) $b['tour_group'] as $k => $v) {
+						foreach((array) $v as $sk => $sv) {
+							$res[] = '<'.$k.' num="'.$sk.'">';
+							
+							$res[] = '<first_name>'.urlencode($sv['first_name']).'</first_name>';
+							$res[] = '<last_name>'.urlencode($sv['last_name']).'</last_name>';
+							$res[] = '<phone>'.urlencode($sv['phone']).'</phone>';
+							$res[] = '<email>'.urlencode($sv['email']).'</email>';
+							
+							if(is_array($sv['forms'])) {
+								$res[] = '<forms>';
+															
+								foreach((array) $sv['forms'] as $fk => $fv) {
+									if(is_array($fv)) $fv = implode(", ", $fv); // for multiselects
+									$res[] = '<form num="'.$fk.'">'.urlencode(stripslashes($fv)).'</form>';
+								}
+								
+								$res[] = '</forms>';
+							}
+							
+							$res[] = '</'.$k.'>';
+							
+						}		
+					}
+					
+					$res[] = '</tour_group>';
+					
+				}
+				
+				if($b['tour_forms']) {
+					$res[] = '<tour_forms>';
+				
+					foreach((array) $b['tour_forms'] as $k => $v) {
+						if(is_array($v)) $v = implode(", ", $v); // for multiselects
+						$res[] = '<form num="'.$k.'">'.urlencode(stripslashes($v)).'</form>';
+					}
+					
+					$res[] = '</tour_forms>';
+				}
+				
+				$res[] = '</booking>';
+				
+			} // cart loop
+			
+			$res[] = '<payment>';
+			
+			($r['trigger_code']) ? $res[] = '<trigger_code>'.$r['trigger_code'].'</trigger_code>' : 0;
+				
+			($r['tour_first_name']) ? $res[] = '<tour_first_name>'.$r['tour_first_name'].'</tour_first_name>' : 0;
+			($r['tour_last_name']) ? $res[] = '<tour_last_name>'.$r['tour_last_name'].'</tour_last_name>' : 0;
+			($r['tour_address_1']) ? $res[] = '<tour_address_1>'.$r['tour_address_1'].'</tour_address_1>' : 0;
+			($r['tour_address_2']) ? $res[] = '<tour_address_2>'.$r['tour_address_2'].'</tour_address_2>' : 0;
+			($r['tour_city']) ? $res[] = '<tour_city>'.$r['tour_city'].'</tour_city>' : 0;
+			($r['tour_stateprov']) ? $res[] = '<tour_stateprov>'.$r['tour_stateprov'].'</tour_stateprov>' : 0;
+			($r['tour_country']) ? $res[] = '<tour_country>'.$r['tour_country'].'</tour_country>' : 0;
+			($r['tour_postal_code']) ? $res[] = '<tour_postal_code>'.$r['tour_postal_code'].'</tour_postal_code>' : 0;
+			($r['tour_phone_number']) ? $res[] = '<tour_phone_number>'.$r['tour_phone_number'].'</tour_phone_number>' : 0;
+			($r['tour_email_address']) ? $res[] = '<tour_email_address>'.$r['tour_email_address'].'</tour_email_address>' : 0;
+			
+			($r['payment_method']) ? $res[] = '<payment_method>'.urlencode(stripslashes($r['payment_method'])).'</payment_method>' : 0;
+			
+			($r['payment_method_add']) ? $res[] = '<payment_method_add>'.urlencode(stripslashes($r['payment_method_add'])).'</payment_method_add>' : 0;
+			
+			($r['payment_method'] == 'Credit Cards' && $r['tour_card_token']) ? $res[] = '<tour_card_token>'.$r['tour_card_token'].'</tour_card_token>' : 0;
+			($r['payment_method'] == 'PayPal' && $r['paypal_token']) ? $res[] = '<paypal_token>'.$r['paypal_token'].'</paypal_token>' : 0;
+			($r['payment_method'] == 'PayPal' && $r['paypal_payer_id']) ? $res[] = '<paypal_payer_id>'.$r['paypal_payer_id'].'</paypal_payer_id>' : 0;
+			
+			($r['agree_terms']) ? $res[] = '<agree_terms>'.$r['agree_terms'].'</agree_terms>' : 0;
+			
+			// add in external elements
+			($this->refid) ? $res[] = '<refid>'.$this->refid.'</refid>' : 0;
+			($this->promo_code) ? $res[] = '<trigger_code>'.$this->promo_code.'</trigger_code>' : 0;
+			
+			$res[] = '</payment>';
+			
+			//$res = str_replace("<", "&lt", $res);
+			
+			$request = implode('', $res);
+			
+			$this->XMLRequest(commitOrder, $request, 1);
+			
+			return $this->commit_response;
+		}
+		
 		// this function is for sending a partial commit request, it does not add any values itself
 		function sendPartialCommit($var=null) {
 			$request = '&'.$var;
@@ -1616,7 +1811,136 @@
 			
 			return $this->contact_response;
 		}
-	
+		
+		function addToCart($item, $clear=0) {
+			
+			if(!$clear) {
+				// don't load the old cart if we are clearing it
+				if($_SESSION['rezgo_cart_'.REZGO_CID]) { $cart = $_SESSION['rezgo_cart_'.REZGO_CID]; }
+				elseif($_COOKIE['rezgo_cart_'.REZGO_CID]) { $cart = unserialize(stripslashes($_COOKIE['rezgo_cart_'.REZGO_CID])); }
+			}
+			
+			// add the new item to the cart
+			foreach((array) $item as $v) {
+				
+				// check the items in the cart to see if we have a duplicate (modified) item (same uid same date) 
+				// If we do, remove it so we can add the new one
+				foreach((array) $cart as $ck => $cv) {
+					if($cv['uid'] == $v['uid'] && $cv['date'] == $v['date']) {
+						unset($cart[$ck]);
+					}
+				}				
+				
+				// at least 1 price point must be set to add this item
+				// this works to remove items as well, if they match the date (above) but have no prices set
+				if(
+					$v['adult_num'] || $v['child_num'] || $v['senior_num'] || 
+					$v['price4_num'] || $v['price5_num'] || $v['price6_num'] || 
+					$v['price7_num'] || $v['price8_num'] || $v['price9_num']
+				) {
+					$cart[] = $v;
+				}
+			}
+			
+			return $cart;
+		}
+		
+		function clearCart() {
+			unset($_SESSION['rezgo_cart_'.REZGO_CID]);
+			unset($_COOKIE['rezgo_cart_'.REZGO_CID]);
+			setcookie("rezgo_cart_".REZGO_CID, '', time() + $ttl, '/', $_SERVER['SERVER_NAME']);
+		}
+		
+		function getCart($hide=null) {
+			
+			$types = array('adult', 'child', 'senior', 'price4', 'price5', 'price6', 'price7', 'price8', 'price9');
+			
+			if(is_array($this->cart)) {			
+				$c = 0;
+				foreach($this->cart as $k => $v) {
+				
+					$tour = $this->getTours('t=uid&q='.$v['uid'].'&d='.$v['date']
+						.'&adult_num='.$v['adult_num']
+						.'&child_num='.$v['child_num']
+						.'&senior_num='.$v['senior_num']
+						.'&price4_num='.$v['price4_num']
+						.'&price5_num='.$v['price5_num']
+						.'&price6_num='.$v['price6_num']
+						.'&price7_num='.$v['price7_num']
+						.'&price8_num='.$v['price8_num']
+						.'&price9_num='.$v['price9_num']
+					);
+					
+					if($tour) {
+					
+						$cart[$c]->cartID = $k;
+						
+						$cart[$c]->cid = (string) $tour[0]->cid;
+						$cart[$c]->uid = (string) $tour[0]->uid;
+						$cart[$c]->com = (string) $tour[0]->com;
+						
+						$cart[$c]->name = (string) $tour[0]->name;
+						$cart[$c]->time = (string) $tour[0]->time;
+						
+						$cart[$c]->date = strtotime($v['date']);
+						
+						$cart[$c]->availability = (string) $tour[0]->date[0]->availability;
+						
+						$cart[$c]->currency_symbol = (string) $tour[0]->currency_symbol;
+						$cart[$c]->currency_separator = (string) $tour[0]->currency_separator;
+						$cart[$c]->currency_decimals = (string) $tour[0]->currency_decimals;
+						$cart[$c]->currency_base = (string) $tour[0]->currency_base;
+						
+						$element_total = 0;
+						$pax_count = 0;
+						
+						foreach($types as $sv) {
+							if($v[$sv.'_num']) {
+								
+								$cart[$c]->{$sv.'_num'} = $v[$sv.'_num'];
+								
+								$cart[$c]->pax->$sv = $v[$sv.'_num'];
+								
+								$cart[$c]->totals->$sv = (string) $tour[0]->{'total_'.$sv};
+								
+								$cart[$c]->labels->$sv = (string) $tour[0]->{$sv.'_label'};
+								
+								$pax_count += $v[$sv.'_num'];
+								$element_total += $cart[$c]->totals->$sv;
+							}
+						}
+						
+						$cart[$c]->pax_count = $pax_count;
+						
+						$cart[$c]->total = $element_total;
+						
+						$cart_sort[$cart[$c]->name] = $c;
+						
+						// if we are hiding empty elements and this element doesn't have enough space, remove it
+						if($hide && $cart[$c]->availability < $pax_count) {
+							unset($cart[$c]);
+						} else {
+							$c++;
+						}
+						
+					}	
+					
+					// reorder the cart after sorting it into alphabetical order
+					if($cart_sort) {
+						ksort($cart_sort);
+						foreach($cart_sort as $k => $v) {
+							$cart_order[] = $cart[$v];
+						}
+					}
+					
+				}
+				
+			} // if item exists
+				
+			return (array) $cart;
+			
+		}
+		
 	}
 	
 ?>

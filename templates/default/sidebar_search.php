@@ -1,7 +1,11 @@
 <!--right side -->
 <div id="right_panel">
+	
+	<? if($site->getCartState()) { ?>
+		<?=$site->getTemplate('sidebar_order')?>
+	<? } ?>
 
-	<? if($site->exists($site->getTriggerState())) { ?>
+	<? if($site->getTriggerState()) { ?>
 		<div id="promo">
 			<h1>Have a promotional code?</h1>
 			<? if($_SESSION['rezgo_promo']) { ?>
@@ -58,7 +62,7 @@
 					else { $size = 14; }
 				?>
 				
-				<a href="<?=$site->base?>/tag/<?=urlencode($tag->name)?>" style="font-size:<?=$size?>px;" alt="<?=$tag->count?>" title="<?=$tag->count?>"><?=$tag->name?></a>&nbsp;&nbsp;&nbsp; 
+				<a href="<?=$site->base?>/tag/<?=rawurlencode($tag->name)?>" style="font-size:<?=$size?>px;" alt="<?=$tag->count?>" title="<?=$tag->count?>"><?=$tag->name?></a>&nbsp;&nbsp;&nbsp; 
 				
 			<? endforeach; ?>
 		
@@ -77,5 +81,11 @@
 		RefID: <?=$_COOKIE['rezgo_refid_val']?>
 	</div>
 <? } ?>
+
+<!-- Rezgo logo DO NOT DELETE -->
+<div id="rezgo_logo">
+	<a href="http://www.rezgo.com" target="_blank" title="powered by rezgo">powered by<img src="<?=$site->path?>/images/logo_rezgo.gif" border="0" alt="Rezgo" /></a>
+</div>
+<!-- Rezgo logo DO NOT DELETE -->
 
 </div><!--end rezgo wrp-->

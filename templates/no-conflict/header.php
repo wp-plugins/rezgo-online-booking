@@ -16,7 +16,9 @@
 <link rel="stylesheet" type="text/css" href="<?=$this->path?>/header_ie.css" />
 <![endif]-->
 
-<script type="text/javascript" src="<?=$this->path?>/javascript/jquery.tools.min.js"></script>
+<script type="text/javascript" src="<?=$this->path?>/javascript/jquery.tools.min.js?541"></script>
+
+<script type="text/javascript" src="<?=$this->path?>/javascript/waypoints.min.js"></script>
 
 <? if($site->exists($site->getStyles())) { ?>
 <style>
@@ -26,4 +28,8 @@
 
 -->
 </style>
+<? } ?>
+
+<? if($preview_mode) { ?>
+<div class="review_banner"><a href="http://support.rezgo.com/settings-tab/settings-home.html" target="_blank">preview mode</a></div>
 <? } ?>

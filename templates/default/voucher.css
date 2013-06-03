@@ -1,0 +1,129 @@
+@charset "UTF-8";
+/* CSS Document */
+
+/* Voucher styles */
+* {
+	font-size:14px;
+	font-family:Helvetica, Verdana, Arial, sans-serif;
+	line-height:20px;
+}
+
+#voucher_wrp {
+	border:10px solid #ccc;
+	/*overflow:hidden;*/
+	padding:20px;
+	margin:10px auto;
+	width:80%;
+	background:url(images/logo_poweredby_rezgo.png) right bottom no-repeat #fff;
+}
+
+.contents {
+	float:left;
+	width:65%;
+	border-right:1px dotted #333;
+	padding-right:10px;
+	overflow:visible;
+	height:auto;
+}
+
+.scan {
+	float:left;
+	width:30%;
+	padding-left:10px;
+}
+
+.barcode_2d {
+	display:block;
+	text-align:center;
+}
+
+.barcode {
+	display:block;
+	text-align:center;
+	margin-top:20px;
+}
+
+.voucher_no {
+	display:block;
+	text-align:center;
+	margin-top:20px;
+	font-weight:bold;
+	font-size:18px;
+}
+
+h1.title {
+	font-size:30px;
+	font-weight:bold;
+}
+
+h1.title span {
+	display:block;
+	font-size:20px;
+	font-weight:bold;
+	line-height:40px;
+	color:#666;
+	margin-bottom:5px;
+}
+
+h2.tour_name {
+	font-size:26px;
+	margin-bottom:5px;
+}
+
+h2.tour_name span {
+	margin-left:10px;
+}
+
+h3.op_name {
+	font-size:20px;
+	margin-top:5px;
+}
+
+.booked_for {
+	display:block;
+}
+
+.booked_for label, .issued label {
+	font-weight:bold;
+	font-size:14px;
+	padding-right:5px;
+}
+
+.issued {
+	display:block;
+}
+
+.issued label {
+
+}
+
+.passenger_info, .pickup, .dropoff, .policy, .contact {
+	margin:10px 0;
+	padding:10px 0;
+	overflow:visible;
+	/*display:inline;*/
+	height:auto;
+}
+
+.passenger_info label {
+	font-weight:bold;
+	margin-right:5px;
+}
+
+.pickup label, .dropoff label, .policy label, .contact label {
+	font-weight:bold;
+	font-size:18px;
+	color:#333;
+	line-height:40px;
+	display:block;
+}
+
+.contact {
+	text-align:center;
+}
+
+.footer {
+	clear:right;
+	background:url(images/logo_rezgo.gif) right bottom no-repeat;
+	text-align:right;
+}

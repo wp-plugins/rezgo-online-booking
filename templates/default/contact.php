@@ -24,7 +24,7 @@
   	Tax ID: <?=$company->tax_id?>
   	<? } ?>
 </div>
-		<? if($result->status == 1) { ?>
+		<? if($result->status == 1 && $bot_request !== TRUE) { ?>
 		
 		<div class="contact_msg">
 			Thank you for your message, one of our sales representatives will contact you shortly.
@@ -56,6 +56,7 @@
 				</li>
 				<li><label>Message:<em>*</em></label>
 					<textarea name="body" rows="8" cols="40" wrap="on" required="required"><?=$_REQUEST['body']?></textarea>
+          <input type="text" name="hp_rezgo" class="hp_rez" value="" />
 				</li>
 				
 				<? if($site->exists(REZGO_CAPTCHA_PUB_KEY)) { ?>
@@ -68,7 +69,7 @@
 					
 				<? } ?>
 				
-				<li><input type="submit" class="submit btn_search" value="Send Request"></li>
+				<li><input type="submit" class="submit btn_search" value="Send Request" /></li>
 			</ul>
 			</form>
 		</div>
