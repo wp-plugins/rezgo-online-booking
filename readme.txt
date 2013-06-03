@@ -43,7 +43,7 @@ customer booking experience.
 * Integrated media gallery for photos and videos
 * Complete transaction processing on your own site (with secure certificate)
 * Full integration with 20+ payment systems including PayPal, Authorize.net, and many more.
-* Plus all the other [features of Rezgo] (http://www.rezgo.com/features)
+* Plus all the other [features of Rezgo](http://www.rezgo.com/features)
 
 = Support for your Rezgo Account =
 
