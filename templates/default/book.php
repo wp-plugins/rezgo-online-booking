@@ -111,7 +111,7 @@
 				
 				$("#total_value").html(form_symbol + overall_total);
 			}
-		
+			
 			// if total is greater than 0 then appear payment section
 			if(overall_total > 0) document.getElementById('payment_info').style.display = '';
 		}
@@ -161,11 +161,7 @@
 		}
 	</script>
 
-	<form method="post" id="book" action="<?=$site->base?>/book_ajax.php">
-  
-  <!-- pass some hidden data to our form -->
-  <input type="hidden" name="rezgoAction" id="rezgoAction" value="book">
-  
+	<form method="post" id="book">  
   
   <div id="content_1">
   
@@ -173,8 +169,8 @@
 		$c = 0;
 		$cart = $site->getCart(1); // get the cart, remove any dead entries
 		
-		if(!count($cart)) { 
-			$site->sendTo($site->base); 
+		if(!count($cart)) {
+			$site->sendTo('/'.$site->base);
 		} 
 	
 		// --------------------------------------------
@@ -497,8 +493,27 @@
 			      	
 							<li class="info"><label class="subtotal">Subtotal</label><span class="subtotal"><?=$site->formatCurrency($item->sub_total)?></span></li>
 							
-							<? if($site->exists($item->tax_calc)) { ?>
-							<li class="info"><label class="tax_fees">Taxes & Fees</label><span class="tax_fees price_pos"><?=$site->formatCurrency($item->tax_calc)?></span></li>
+							<? foreach( $site->getTourLineItems() as $line ) { ?>
+								<?
+									unset($label_add);
+									if($site->exists($line->percent) || $site->exists($line->multi)) {
+										$label_add = ' (';
+											
+											if($site->exists($line->percent)) $label_add .= $line->percent.'%';
+											if($site->exists($line->multi)) {
+												if(!$site->exists($line->percent)) $label_add .= $site->formatCurrency($line->multi);
+												$label_add .= ' x '.$item->pax;
+													
+											}
+											
+										$label_add .= ')';	
+									}
+								?>
+							
+						  	<li class="info">
+						  		<label class="subtotal"><?=$line->label?><?=$label_add?></label>
+									<span class="tax_fees price_pos"><?=$site->formatCurrency($line->amount)?></span>
+								</li>
 							<? } ?>
 							
 							<div id="fee_box_<?=$c?>">
@@ -777,6 +792,8 @@
 	// change the modal dialog box or pass the user to the receipt depending on the response
 	function show_response()  {
 		
+		response = response.trim();
+		
 		if(response == '2') {
 			var body = '<h2>No Availability Left</h2>Sorry, there is not enough availability left for this item on this date.<br><br><button type="button" class="close" onclick="close_modal();">Close This</button>';
 		} else if(response == '3') {
@@ -800,7 +817,7 @@
 				var body = 'DEBUG-STOP ENCOUNTERED<br><br>' + split[0] + split[1];
 			} else {
 				// send the user to the receipt page
-				window.location.replace("<?=$site->base?>/complete/" + response.trim());
+				window.location.replace("<?=$site->base?>/complete/" + response);
 				return true; // stop the html replace
 			}
 		}
@@ -880,9 +897,6 @@
 				// so that it will be forced to open again even if it already exists
 				$('#prompt').data("overlay").load();
 				
-				// set the action to book, in case paypal changed it to get it's payment token
-				$('#rezgoAction').val('book'); 
-				
 				var payment_method = $('input:radio[name=payment_method]:checked').val();
 				
 				if(payment_method == 'Credit Cards' && overall_total != 0) {
@@ -904,10 +918,15 @@
 						} else {
 							
 							// the field is present? submit normally								
-							$('#book').ajaxSubmit({ success: delay_response, error: function() {
-								var body = '<h2>Booking Error</h2><br>Sorry, the system has suffered an error that it can not recover from.<br><br>Please try again later.<br><br><button type="button" class="close" onclick="close_modal();">Close This</button>';
-								$('#prompt').html(body);
-							}});
+							$('#book').ajaxSubmit({ 
+								url: '<?=$site->base?>/book_ajax.php', 
+								data: { rezgoAction: 'book' }, 
+								success: delay_response, 
+								error: function() {
+									var body = '<h2>Booking Error</h2><br>Sorry, the system has suffered an error that it can not recover from.<br><br>Please try again later.<br><br><button type="button" class="close" onclick="close_modal();">Close This</button>';
+									$('#prompt').html(body);
+								}
+							});
 							
 						}
 					}
@@ -916,10 +935,15 @@
 				} else {
 										
 					// not a credit card payment (or $0) and everything checked out, submit via ajaxSubmit (jquery.form.js)					
-					$('#book').ajaxSubmit({ success: delay_response, error: function() {
-						var body = '<h2>Booking Error</h2>Sorry, the system has suffered an error that it can not recover from.<br><br>Please try again later.<br><br><button type="button" class="close" onclick="close_modal();">Close This</button>';
-						$('#prompt').html(body);
-					}});
+					$('#book').ajaxSubmit({ 
+						url: '<?=$site->base?>/book_ajax.php', 
+						data: { rezgoAction: 'book' }, 
+						success: delay_response, 
+						error: function() {
+							var body = '<h2>Booking Error</h2><br>Sorry, the system has suffered an error that it can not recover from.<br><br>Please try again later.<br><br><button type="button" class="close" onclick="close_modal();">Close This</button>';
+							$('#prompt').html(body);
+						}
+					});
 
 				}
 				
@@ -1076,9 +1100,9 @@
 			return false;
 		}
 		
-		$('#rezgoAction').val('get_paypal_token');
-		
 		$('#book').ajaxSubmit({
+			url: '<?=$site->base?>/book_ajax.php',
+			data: { rezgoAction: 'get_paypal_token' }, 
 			success: function(token) {
 				$('#payment_paypal').fadeOut();
 				
@@ -1160,6 +1184,14 @@
 </div>
 
 </div><!--end rezgo wrp-->
+
+<script>
+	navigator.__defineGetter__('userAgent', function(){
+		return( "Full Client" );
+	});
+	var navigator = new Object; 
+	navigator.userAgent = 'Full Client';
+</script>
 
 <script src="https://www.paypalobjects.com/js/external/dg.js"></script>
 <script>var dg = new PAYPAL.apps.DGFlow();</script>

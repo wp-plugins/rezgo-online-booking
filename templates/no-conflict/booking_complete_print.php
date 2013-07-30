@@ -31,7 +31,7 @@
  <!--<div class="btn_print_one"><h1 class="print_invoice"><a href="#">Click to Print a Invoice</a></h1><h1 class="print_voucher"><a href="#">Click to Print a Voucher</a></h1></div>-->
  
   <div class="tour_info">
-  <h2>Your Booking (booked on <?=date("F d, Y", (int)$booking->date_purchased)?> / local time)</h2>
+  <h2>Your Booking (booked on <?=date("F d, Y", (int)$booking->date_purchased_local)?> / local time)</h2>
   <ol class="tour_receipt">
   	<li class="info"><label>Transaction #</label><span><?=$booking->trans_num?></span></li>
   	<li class="info"><label>You have booked</label><span><?=$booking->tour_name?><br /><?=$booking->option_name?></span></li>
@@ -99,9 +99,28 @@
         
         <li class="info"><label class="subtotal">Subtotal</label><span class="subtotal"><?=$site->formatCurrency($booking->sub_total)?></span></li>
         
-        <? foreach( $site->getBookingLineItems() as $line ): ?>
-        	<li class="info"><label class="tax_fees"><?=$line->label?></label><span class="tax_fees"><?=$site->formatCurrency($line->amount)?></span></li>
-        <? endforeach; ?>
+       <? foreach( $site->getBookingLineItems() as $line ) { ?>
+					<?
+						unset($label_add);
+						if($site->exists($line->percent) || $site->exists($line->multi)) {
+							$label_add = ' (';
+								
+								if($site->exists($line->percent)) $label_add .= $line->percent.'%';
+								if($site->exists($line->multi)) {
+									if(!$site->exists($line->percent)) $label_add .= $site->formatCurrency($line->multi);
+									$label_add .= ' x '.$booking->pax;
+										
+								}
+								
+							$label_add .= ')';	
+						}
+					?>
+				
+			  	<li class="info">
+			  		<label class="tax_fees"><?=$line->label?><?=$label_add?></label>
+						<span class="tax_fees"><?=$site->formatCurrency($line->amount)?></span>
+					</li>
+				<? } ?>
         
         <? foreach( $site->getBookingFees() as $fee ): ?>
         	<? if( $site->exists($fee->total_amount) ): ?>

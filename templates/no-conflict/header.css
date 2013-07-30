@@ -1361,8 +1361,11 @@ a.caldisabled {
 #rezgo #calendar_container #date_selection select {
 	font-weight:normal;
 	font-size:12px;
+	background: #FFFFFF;
 	color:#333;
 	margin:0;
+	padding: 0;
+	width: auto;
 }
 
 #rezgo #calendar_container .daysofweek {
@@ -1378,6 +1381,7 @@ a.caldisabled {
 	height:25px;
 	font-weight:bold;
 	vertical-align:middle;
+	text-align: center;
 }
 
 #rezgo #calendar_container .leads {
@@ -1530,6 +1534,7 @@ a.caldisabled {
 	padding:35px;	
 	font-size:11px;
 	z-index:1000;
+	-moz-box-sizing: inherit;
 }
 
 /* default close button positioned on upper right corner */
