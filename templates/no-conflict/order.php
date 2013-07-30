@@ -99,7 +99,7 @@
       
       <div class="cart_action">
     		<li class="cart_back">
-    			<input class="submit" value="Continue Shopping" onclick="document.location.href='<?=$site->base?>';" type="submit">
+    			<input class="submit" value="Continue Shopping" onclick="document.location.href='<?=$site->base?>/';" type="submit">
     		</li>
         <li class="cart_submit">
         	<form action="<?=$site->base?>/book">

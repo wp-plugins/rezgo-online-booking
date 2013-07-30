@@ -3,8 +3,8 @@ Contributors: rezgo
 Donate link: http://www.rezgo.com/
 Tags:  tour operator software, tour booking system, activity booking software, tours, activities, events, attractions, booking, reservation, ticketing, e-commerce, business, rezgo
 Requires at least: 3.0.0
-Tested up to: 3.5.1
-Stable tag: 1.7
+Tested up to: 3.5.2
+Stable tag: 1.8
 
 Sell your tours, activities, and events on your WordPress website using Rezgo.
 
@@ -43,7 +43,7 @@ customer booking experience.
 * Integrated media gallery for photos and videos
 * Complete transaction processing on your own site (with secure certificate)
 * Full integration with 20+ payment systems including PayPal, Authorize.net, and many more.
-* Plus all the other [features of Rezgo](http://www.rezgo.com/features)
+* Plus all the other [features of Rezgo] (http://www.rezgo.com/features)
 
 = Support for your Rezgo Account =
 
@@ -180,9 +180,15 @@ booking engine.
 
 == Changelog ==
 
+= 1.8 =
+* Added support for new line items system.
+* Improved AJAX booking request to better prevent accidental submission.
+* Added no-conflict template to the update exceptions.
+* Added new line items method to rezgo class.
+
 = 1.7 =
 * Brand new shopping cart interface allows many items to be booked at once.
-* New XML commit request supporting multiple item.
+* New XML commit request supporting multiple items.
 * New anti-spam measures added to contact form.
 * Inconsistent date labels have been changed to "booked for."
 * Some share links removed from item details.

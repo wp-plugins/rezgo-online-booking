@@ -8,28 +8,6 @@
 	session_start();
 ?>
 
-<? if($_SESSION['REZGO_CONVERSION_ANALYTICS']) { ?>
-	<?=$_SESSION['REZGO_CONVERSION_ANALYTICS']?>
-			
-	<?
-	/*
-	<script type="text/javascript">
-		var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-		document.write(unescape("%3Cscript src=\'" + gaJsHost + "google-analytics.com/ga.js\' type=\'text/javascript\'%3E%3C/script%3E"));
-	</script>
-
-	<script type="text/javascript">
-		try {
-			var pageTracker = _gat._getTracker("<?=(($site->isVendor()) ? 'UA-1943654-6' : 'UA-1943654-4')?>");
-			pageTracker._trackPageview();
-		} catch(err) {}
-	</script>
-	*/
-	?>
-	
-	<? unset($_SESSION['REZGO_CONVERSION_ANALYTICS']); ?>
-<? } ?>
-
 <div id="rezgo" class="wrp_book">
 	
 <div id="panel_full">
@@ -208,9 +186,27 @@
         
         <li class="info"><label class="subtotal">Subtotal</label><span class="subtotal"><?=$site->formatCurrency($booking->sub_total)?></span></li>
         
-        <? foreach( $site->getBookingLineItems() as $line ): ?>
-        	<li class="info"><label class="tax_fees"><?=$line->label?></label><span class="tax_fees"><?=$site->formatCurrency($line->amount)?></span></li>
-        <? endforeach; ?>
+        <? foreach( $site->getBookingLineItems() as $line ) { ?>
+					<?
+						unset($label_add);
+						if($site->exists($line->percent) || $site->exists($line->multi)) {
+							$label_add = ' (';
+								
+								if($site->exists($line->percent)) $label_add .= $line->percent.'%';
+								if($site->exists($line->multi)) {
+									if(!$site->exists($line->percent)) $label_add .= $site->formatCurrency($line->multi);
+									$label_add .= ' x '.$booking->pax;
+								}
+								
+							$label_add .= ')';	
+						}
+					?>
+				
+			  	<li class="info">
+			  		<label class="subtotal"><?=$line->label?><?=$label_add?></label>
+						<span class="tax_fees price_pos"><?=$site->formatCurrency($line->amount)?></span>
+					</li>
+				<? } ?>
         
         <? foreach( $site->getBookingFees() as $fee ): ?>
         	<? if( $site->exists($fee->total_amount) ): ?>
@@ -377,3 +373,10 @@
 <div id="rezgo_logo"><a href="http://www.rezgo.com" target="_blank" title="powered by rezgo">powered by<img src="<?=$site->path?>/images/logo_rezgo.gif" border="0" alt="Rezgo" /></a></div>
 <!-- Rezgo logo DO NOT DELETE -->
 </div><!--end rezgo wrp-->
+
+<? if($_SESSION['REZGO_CONVERSION_ANALYTICS']) { ?>
+	
+	<?=$_SESSION['REZGO_CONVERSION_ANALYTICS']?>
+	
+	<? unset($_SESSION['REZGO_CONVERSION_ANALYTICS']); ?>
+<? } ?>

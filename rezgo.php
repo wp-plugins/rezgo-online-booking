@@ -4,7 +4,7 @@
 		Plugin Name: Rezgo Online Booking
 		Plugin URI: http://wordpress.org/extend/plugins/rezgo-online-booking/
 		Description: Connect WordPress to your Rezgo account and accept online bookings directly on your website.
-		Version: 1.7
+		Version: 1.8
 		Author: Rezgo
 		Author URI: http://www.rezgo.com
 		License: Modified BSD
@@ -629,7 +629,7 @@
 		
 		$dir = dir(dirname(__FILE__).'/templates/');
 		while (false !== $entry = $dir->read()) {
-			if ($entry == '.' || $entry == '..' || $entry == 'default') continue;
+			if ($entry == '.' || $entry == '..' || $entry == 'default' || $entry == 'no-conflict') continue;
 			
 			$from = dirname(__FILE__).'/templates/'.$entry;
 			$to = sys_get_temp_dir().'/rezgo-wp-'.$_REQUEST['upgrade_id'].'/'.$entry;
@@ -652,7 +652,26 @@
 		rezgo_upgrade_rm(sys_get_temp_dir().'/rezgo-wp-'.$_REQUEST['upgrade_id']);
 	}
 	
+	function rezgo_page_title( $title, $sep ) {
+	
+		global $site, $item;
+		
+		$site = new RezgoSite();
+		
+		$item = $site->getTours('t=com&q='.$_REQUEST['com'].'&f[uid]='.$_REQUEST['option'].'&d='.$_REQUEST['date'].'&limit=1', 0);
+		if ($_REQUEST['rezgo_page'] != '' && $item->name) {
+			$title = $item->name . $sep . ' ';
+		} elseif ($_REQUEST['tags']) {
+			$title = 'Tours tagged with &quot;'.$_REQUEST['tags'].'&quot;' . $sep . ' ';
+		}
+		
+		return $title;
+	}
+	
 	add_filter('upgrader_pre_install', 'rezgo_upgrade_backup', 10, 2);
 	add_filter('upgrader_post_install', 'rezgo_upgrade_restore', 10, 2);
+	
+	// modify page title to include tour information
+	//add_filter( 'wp_title', 'rezgo_page_title', 10, 2 );
 	
 ?>

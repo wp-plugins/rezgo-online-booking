@@ -4,7 +4,7 @@
 		This is the Rezgo parser class, it handles processing for the Rezgo XML.
 		
 		VERSION:
-				1.7
+				1.8
 		
 		- Documentation and latest version
 				http://support.rezgo.com/customer/portal/articles/1153719-open-source-php-parser
@@ -49,7 +49,7 @@
 
 	class RezgoSite {
 	
-		var $version = '1.7';
+		var $version = '1.8';
 	
 		var $xml_path;
 		
@@ -535,7 +535,7 @@
 				
 				// send the user to the fatal error page
 				if(REZGO_FATAL_ERROR_PAGE) {
-					$this->sendTo($this->base.REZGO_FATAL_ERROR_PAGE);
+					$this->sendTo(REZGO_FATAL_ERROR_PAGE);
 				}
 			}
 		
@@ -1269,6 +1269,22 @@
 			}
 			
 			return (array) $ret;		
+		}
+		
+		function getTourLineItems(&$obj=null) {
+			if(!$obj) $obj = $this->getItem();
+			
+			if($obj->line_items) {
+				if($obj->line_items->line_item[0]) {
+					foreach($obj->line_items->line_item as $v) {
+						$ret[] = $v;
+					}
+				} else {
+					$ret[] = $obj->line_items->line_item;
+				}
+			}
+			
+			return (array) $ret;
 		}
 		
 		function getTourForms($type='primary', &$obj=null) {
