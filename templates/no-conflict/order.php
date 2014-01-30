@@ -134,7 +134,7 @@
 		</div>
 		
 		<?
-			$this_link = 'http://'.$_SERVER[HTTP_HOST].$site->base.'/order?order=clear';			
+			$this_link = 'http://'.$_SERVER[HTTP_HOST].$site->base.'/order/?order=clear';			
 			foreach( $cart as $key => $order ) {
 				$this_link .= '&add['.$order->cartID.'][uid]='.$order->uid.'&add['.$order->cartID.'][date]='.date("Y-m-d", $order->date);
 				foreach($order->pax as $pax => $num) {	

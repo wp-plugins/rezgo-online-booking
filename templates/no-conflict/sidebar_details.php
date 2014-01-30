@@ -85,7 +85,7 @@
 				}
 			}	
 			
-			change_cal('item_id=<?=$item->uid?>&date=<?=$_REQUEST['date']?>');	
+			change_cal('item_id=<?=$item->uid?>&date=<?=$site->requestStr('date')?>');	
 		
 			jQuery('#calendar_marker').delay(800).fadeIn();
 		</script>

@@ -81,7 +81,7 @@
 			<input type="hidden" name="phone" id="phone" value="<?=$booking->phone_number?>">
 			
 			<input type="hidden" name="item_name" id="item_name" value="<?=$booking->tour_name?> - <?=$booking->option_name?>">
-			<input type="hidden" name="encoded_transaction_id" id="encoded_transaction_id" value="<?=$_REQUEST['trans_num']?>">
+			<input type="hidden" name="encoded_transaction_id" id="encoded_transaction_id" value="<?=$site->requestStr('trans_num')?>">
 			<input type="hidden" name="item_number" id="item_number" value="<?=$trans_num?>">
 			<input type="hidden" name="amount" id="amount" value="<?=$booking->paypal_owed?>">
 			<input type="hidden" name="quantity" id="quantity" value="1">	

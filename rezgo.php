@@ -205,10 +205,10 @@
 	add_action('rezgo_tpl_display', 'rezgo_display_triggers');
 	
 	function rezgo_display_triggers($args) {
+	
 		global $wp, $matched_query;
 		
 		global $wp_current_page;
-		
 		
 		// Process any arguments on the shortcode that we have into _REQUEST variables
 		// we only want arguments that aren't already set as a _REQUEST, so that we don't
@@ -219,8 +219,7 @@
 					$_REQUEST[$k] = $v;
 				}
 			}
-		}
-		
+		}		
 		
 		if($_REQUEST['rezgo_page'] == 'tour_details') {
 			return rezgo_display_details();
@@ -673,5 +672,5 @@
 	
 	// modify page title to include tour information
 	//add_filter( 'wp_title', 'rezgo_page_title', 10, 2 );
-	
+		
 ?>

@@ -12,14 +12,14 @@
 	$site = new RezgoSite();
 	
 	// save the current search to a cookie so we can return to it
-	if($_REQUEST['search'] != 'restore') {
+	if($site->requestStr('search') != 'restore') {
 		$site->saveSearch();
 	}
 	
 	// some code to handle the pagination
-	if(!$_REQUEST['pg']) $_REQUEST['pg'] = 1;
+	if(!$site->requestNum('pg')) $_REQUEST['pg'] = 1;
 	
-	$start = ($_REQUEST['pg'] - 1) * REZGO_RESULTS_PER_PAGE;
+	$start = ($site->requestNum('pg') - 1) * REZGO_RESULTS_PER_PAGE;
 	
 	// we only want 11 responses, starting at our page number times item number
 	$site->setTourLimit(REZGO_RESULTS_PER_PAGE + 1, $start);

@@ -193,8 +193,8 @@
 					</script>
 		   		
 			   	<form id="checkout_box" action="<?=$site->base?>/<?=(($site->getCartState()) ? 'order' : 'book')?>">
-						<input type="hidden" name="add[0][uid]" value="<?=$_REQUEST['option']?>">
-						<input type="hidden" name="add[0][date]" value="<?=$_REQUEST['date']?>">
+						<input type="hidden" name="add[0][uid]" value="<?=$site->requestStr('option')?>">
+						<input type="hidden" name="add[0][date]" value="<?=$site->requestStr('date')?>">
 						
 						<? 
 							// for no-cart requests, we want to make sure we clear the cart
@@ -212,7 +212,7 @@
 						
 			   			<ul class="checkout_box">
 			   				<li class="price_op"><?=$price->label?><?=(($price->required && $site->getTourRequired()) ? '<em>*</em>' : '')?></li>
-			   				<li class="quantity"><input type="text" name="add[0][<?=$price->name?>_num]" value="<?=$_REQUEST[$price->name.'_num']?>" id="<?=$price->name?>" size="3" /> X</li>
+			   				<li class="quantity"><input type="text" name="add[0][<?=$price->name?>_num]" value="<?=$site->requestStr($price->name.'_num')?>" id="<?=$price->name?>" size="3" /> X</li>
 			   				<li class="price">
 			   					<? if($site->exists($price->base)) { ?><span><?=$site->formatCurrency($price->base)?></span><? } ?>
 			   					<?=$site->formatCurrency($price->price)?>
@@ -278,7 +278,7 @@
 							<? foreach($site->getTours('t=com&q='.$_REQUEST['com'].'&d='.$_REQUEST['date']) as $option) { ?>
 								<? if($option->uid != $_REQUEST[option]) { ?>
 									<li>
-										<a href="<?=$site->base?>/details/<?=$item->com?>/<?=$site->seoEncode($item->name)?>/<?=$option->uid?>/<?=$_REQUEST['date']?>">
+										<a href="<?=$site->base?>/details/<?=$item->com?>/<?=$site->seoEncode($item->name)?>/<?=$option->uid?>/<?=$site->requestStr('date')?>">
 											<span class="alt_op"><?=$option->time?></span>
 											<span class="alt_avail">
 												<? if($site->exists($option->date->hide_availability)) { ?>

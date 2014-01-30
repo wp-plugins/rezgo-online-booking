@@ -9,23 +9,23 @@
 		<td colspan=7 align=center>
 			<table border=0 cellspacing=0 cellpadding=0 width=100%>
 				<tr>
-					<td id="prev_button" class="close" onclick="change_cal('item_id=<?=$_REQUEST[item_id]?>&date=<?=$site->getCalendarPrev()?>');"> </td>
+					<td id="prev_button" class="close" onclick="change_cal('item_id=<?=$site->requestStr(item_id)?>&date=<?=$site->getCalendarPrev()?>');"> </td>
 					<td align=center nowrap id="date_selection">
 						
-						<select name=month onchange="change_cal('item_id=<?=$_REQUEST[item_id]?>&date=' + this.value);">
+						<select name=month onchange="change_cal('item_id=<?=$site->requestStr(item_id)?>&date=' + this.value);">
 							<? foreach( $site->getCalendarMonths() as $month ): ?>
 									<option <?=$month->selected?> value="<?=$month->value?>"><?=$months[$month->label]?></option>
 							<? endforeach; ?>
 						</select>
 						
-						<select name=year onchange="change_cal('item_id=<?=$_REQUEST[item_id]?>&date=' + this.value);">
+						<select name=year onchange="change_cal('item_id=<?=$site->requestStr(item_id)?>&date=' + this.value);">
 							<? foreach( $site->getCalendarYears() as $year ): ?>
 								<option <?=$year->selected?> value="<?=$year->value?>"><?=$year->label?></option>
 							<? endforeach; ?>				
 						</select>
 						
 					</td>
-					<td align=right id="next_button" onclick="change_cal('item_id=<?=$_REQUEST[item_id]?>&date=<?=$site->getCalendarNext()?>');"> </td>
+					<td align=right id="next_button" onclick="change_cal('item_id=<?=$site->requestStr(item_id)?>&date=<?=$site->getCalendarNext()?>');"> </td>
 				</tr>
 			</table>
 		</td>

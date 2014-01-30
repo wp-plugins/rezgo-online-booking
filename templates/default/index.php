@@ -47,16 +47,16 @@
  	
  	<script>
  		var start = 1;
-		var search_start_date = '<?=$_REQUEST['start_date']?>';
-		var search_end_date = '<?=$_REQUEST['end_date']?>';
-		var search_tags = '<?=$_REQUEST['tags']?>';
+		var search_start_date = '<?=$site->requestStr('start_date')?>';
+		var search_end_date = '<?=$site->requestStr('end_date')?>';
+		var search_tags = '<?=$site->requestStr('tags')?>';
 		
-		var search_in = '<?=$_REQUEST['search_in']?>';
-		var search_for = '<?=$_REQUEST['search_for']?>';
+		var search_in = '<?=$site->requestStr('search_in')?>';
+		var search_for = '<?=$site->requestStr('search_for')?>';
 		
-		var cid = '<?=$_REQUEST['cid']?>';
+		var cid = '<?=$site->requestNum('cid')?>';
 		
-		var load = '<?=$_REQUEST['pg']?>';
+		var load = '<?=$site->requestStr('pg')?>';
 		
 		function tour_search(start_date, end_date, tags, keywords) {
 			
@@ -183,16 +183,16 @@
  	
  	<? if($backButton) { ?>
 	 	<div class="prev_results">
-	 		<a href="?pg=<?=($_REQUEST['pg']-1)?><? if($_REQUEST['start_date']) { ?>&start_date=<?=$_REQUEST['start_date']?>&end_date=<?=$_REQUEST['end_date']?><? } ?>">previous page</a> | jump to page:  
+	 		<a href="?pg=<?=($_REQUEST['pg']-1)?><? if($_REQUEST['start_date']) { ?>&start_date=<?=$site->requestStr('start_date')?>&end_date=<?=$site->requestStr('end_date')?><? } ?>">previous page</a> | jump to page:  
 	 		<? for($p=1; $p < $_REQUEST['pg']; $p++) { ?>
-	 			<a href="?pg=<?=$p?><? if($_REQUEST['start_date']) { ?>&start_date=<?=$_REQUEST['start_date']?>&end_date=<?=$_REQUEST['end_date']?><? } ?>"><?=$p?></a>
+	 			<a href="?pg=<?=$p?><? if($_REQUEST['start_date']) { ?>&start_date=<?=$site->requestStr('start_date')?>&end_date=<?=$site->requestStr('end_date')?><? } ?>"><?=$p?></a>
 	 		<? } ?>
 	 	</div>
  	<? } ?>
  	
  	<? if($moreButton) { ?>
 	 	<div class="more_results">
-	 		<a href="?pg=<?=$nextPage?><? if($_REQUEST['start_date']) { ?>&start_date=<?=$_REQUEST['start_date']?>&end_date=<?=$_REQUEST['end_date']?><? } ?>">more results</a>
+	 		<a href="?pg=<?=$nextPage?><? if($_REQUEST['start_date']) { ?>&start_date=<?=$site->requestStr('start_date')?>&end_date=<?=$site->requestStr('end_date')?><? } ?>">more results</a>
 	 	</div>
  	<? } ?>
  	

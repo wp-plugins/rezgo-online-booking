@@ -40,13 +40,13 @@
 			<input type="hidden" name="rezgoAction" value="contact">
 			
 			<ul>
-      	<li><label>Name:<em>*</em></label><input type="text" required="required" name="full_name" value="<?=$_REQUEST['full_name']?>"></li>
-				<li><label>Email:<em>*</em></label><input type="email" required="required" name="email" value="<?=$_REQUEST['email']?>"></li>
-				<li><label>Phone:</label><input type="text" name="phone" value="<?=$_REQUEST['phone']?>"></li>
-				<li><label>Address:</label><input type="text" name="address" value="<?=$_REQUEST['address']?>"></li>
-				<li><label>Address 2:</label><input type="text" name="address2" value="<?=$_REQUEST['address2']?>"></li>
-				<li><label>City:</label><input type="text" name="city" value="<?=$_REQUEST['city']?>"></li>
-				<li><label>State/Province:</label><input type="text" name="state_prov" value="<?=$_REQUEST['state_prov']?>"></li>
+      	<li><label>Name:<em>*</em></label><input type="text" required="required" name="full_name" value="<?=$site->requestStr('full_name')?>"></li>
+				<li><label>Email:<em>*</em></label><input type="email" required="required" name="email" value="<?=$site->requestStr('email')?>"></li>
+				<li><label>Phone:</label><input type="text" name="phone" value="<?=$site->requestStr('phone')?>"></li>
+				<li><label>Address:</label><input type="text" name="address" value="<?=$site->requestStr('address')?>"></li>
+				<li><label>Address 2:</label><input type="text" name="address2" value="<?=$site->requestStr('address2')?>"></li>
+				<li><label>City:</label><input type="text" name="city" value="<?=$site->requestStr('city')?>"></li>
+				<li><label>State/Province:</label><input type="text" name="state_prov" value="<?=$site->requestStr('state_prov')?>"></li>
 				<li><label>Country:</label>
         		<select name="country">
 							<? foreach( $site->getRegionList() as $iso => $name ): ?>
@@ -55,7 +55,7 @@
 						</select>
 				</li>
 				<li><label>Message:<em>*</em></label>
-					<textarea name="body" rows="8" cols="40" wrap="on" required="required"><?=$_REQUEST['body']?></textarea>
+					<textarea name="body" rows="8" cols="40" wrap="on" required="required"><?=$site->requestStr('body')?></textarea>
           <input type="text" name="hp_rezgo" class="hp_rez" value="" />
 				</li>
 				

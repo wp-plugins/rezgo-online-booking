@@ -1,4 +1,4 @@
-<div id="rezgo_container_<?=$_REQUEST['pg']?>" style="display:none;">
+<div id="rezgo_container_<?=$site->requestNum('pg')?>" style="display:none;">
 
 <!-- div id="rezgo" class="wrp_list" >
 
@@ -11,15 +11,15 @@
 			<? if($_REQUEST['search_for'] OR $_REQUEST['start_date'] OR $_REQUEST['end_date'] OR $_REQUEST['tags'] OR $_REQUEST['cid']) { ?>
 				<h1 class="header">
 				Results
-				<? if($_REQUEST['search_for']) { ?> for keyword <a href="<?=$site->base?>/?start_date=<?=$_REQUEST['start_date']?>&end_date=<?=$_REQUEST['end_date']?>">"<?=stripslashes($_REQUEST['search_for'])?>"</a><? } ?>
-				<? if($_REQUEST['tags']) { ?> tagged with <a href="<?=$site->base?>/?start_date=<?=$_REQUEST['start_date']?>&end_date=<?=$_REQUEST['end_date']?>">"<?=$_REQUEST['tags']?>"</a><? } ?>
-				<? if($_REQUEST['cid']) { ?> supplied by <a href="<?=$site->base?>/?start_date=<?=$_REQUEST['start_date']?>&end_date=<?=$_REQUEST['end_date']?>">"<?=$site->getCompanyName($_REQUEST['cid'])?>"</a><? } ?>
+				<? if($_REQUEST['search_for']) { ?> for keyword <a href="<?=$site->base?>/?start_date=<?=$site->requestStr('start_date')?>&end_date=<?=$site->requestStr('end_date')?>">"<?=stripslashes($_REQUEST['search_for'])?>"</a><? } ?>
+				<? if($_REQUEST['tags']) { ?> tagged with <a href="<?=$site->base?>/?start_date=<?=$site->requestStr('start_date')?>&end_date=<?=$site->requestStr('end_date')?>">"<?=$site->requestStr('tags')?>"</a><? } ?>
+				<? if($_REQUEST['cid']) { ?> supplied by <a href="<?=$site->base?>/?start_date=<?=$site->requestStr('start_date')?>&end_date=<?=$site->requestStr('end_date')?>">"<?=$site->getCompanyName($_REQUEST['cid'])?>"</a><? } ?>
 				<? if($_REQUEST['start_date'] AND $_REQUEST['end_date']) { ?>
-				 between <a href="<?=$site->base?>/?search_in=<?=$_REQUEST['search_in']?>&search_for=<?=$_REQUEST['search_for']?>&tags=<?=$_REQUEST['tags']?>"><?=$_REQUEST['start_date']?> and <?=$_REQUEST['end_date']?></a>
+				 between <a href="<?=$site->base?>/?search_in=<?=$site->requestStr('search_in')?>&search_for=<?=$site->requestStr('search_for')?>&tags=<?=$site->requestStr('tags')?>"><?=$site->requestStr('start_date')?> and <?=$site->requestStr('end_date')?></a>
 				<? } elseif($_REQUEST['start_date']) { ?>
-				 on <a href="<?=$site->base?>/?search_in=<?=$_REQUEST['search_in']?>&search_for=<?=$_REQUEST['search_for']?>&tags=<?=$_REQUEST['tags']?>"><?=$_REQUEST['start_date']?></a>
+				 on <a href="<?=$site->base?>/?search_in=<?=$site->requestStr('search_in')?>&search_for=<?=$site->requestStr('search_for')?>&tags=<?=$site->requestStr('tags')?>"><?=$site->requestStr('start_date')?></a>
 				<? } elseif($_REQUEST['end_date']) { ?>
-				 on <a href="<?=$site->base?>/?search_in=<?=$_REQUEST['search_in']?>&search_for=<?=$_REQUEST['search_for']?>&tags=<?=$_REQUEST['tags']?>"><?=$_REQUEST['end_date']?></a>
+				 on <a href="<?=$site->base?>/?search_in=<?=$site->requestStr('search_in')?>&search_for=<?=$site->requestStr('search_for')?>&tags=<?=$site->requestStr('tags')?>"><?=$site->requestStr('end_date')?></a>
 				<? } ?>
 				</h1>
 				<a href="<?=$site->base?>/" class="clear_search">clear</a>
@@ -31,7 +31,7 @@
 	<? } else { ?>
 	
 		<fieldset style="clear:both; text-align:center; color:#999; border:0px; border-top:1px solid #999;">
-			<legend align=center style="font-size:16px;">&nbsp;Page <?=$_REQUEST['pg']?>&nbsp;</legend>
+			<legend align=center style="font-size:16px;">&nbsp;Page <?=$site->requestStr('pg')?>&nbsp;</legend>
 		</fieldset>
 		
 	<? } ?>

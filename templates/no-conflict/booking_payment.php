@@ -1,6 +1,6 @@
 <?
 	if($_REQUEST['rezgoAction'] == 'return') {
-		echo '<script>parent.creditConfirm("'.$_REQUEST['token'].'");</script>';
+		echo '<script>parent.creditConfirm("'.$site->requestStr('token').'");</script>';
 	}
 ?>
 

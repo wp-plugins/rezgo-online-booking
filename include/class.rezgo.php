@@ -136,16 +136,16 @@
 			$this->setSecure($secure);
 			
 			// perform some variable filtering
-			if($_REQUEST['start_date']) {
-				if(strtotime($_REQUEST['start_date']) == 0) unset($_REQUEST['start_date']);
+			if($this->requestStr('start_date')) {
+				if(strtotime($this->requestStr('start_date')) == 0) unset($_REQUEST['start_date']);
 			}
-			if($_REQUEST['end_date']) {
-				if(strtotime($_REQUEST['end_date']) == 0) unset($_REQUEST['end_date']);
+			if($this->requestStr('end_date')) {
+				if(strtotime($this->requestStr('end_date')) == 0) unset($_REQUEST['end_date']);
 			}
 			
 			// handle the refID if one is set
-			if($_REQUEST['refid'] || $_REQUEST['ttl'] || $_COOKIE['rezgo_refid_val'] || $_SESSION['rezgo_refid_val']) {
-				if($_REQUEST['refid'] || $_REQUEST['ttl']) {
+			if($this->requestStr('refid') || $this->requestStr('ttl') || $_COOKIE['rezgo_refid_val'] || $_SESSION['rezgo_refid_val']) {
+				if($this->requestStr('refid') || $this->requestStr('ttl')) {
 					$new_header = $_SERVER['REQUEST_URI'];
 					
 					// remove the refid information wherever it is
@@ -156,8 +156,8 @@
 					
 					if(substr($new_header, -1) == '?') { $new_header = substr($new_header, 0, -1); }
 					
-					$refid = $_REQUEST['refid'];
-					$ttl = ($_REQUEST['ttl']) ? $_REQUEST['ttl'] : 7200;
+					$refid = $this->requestStr('refid');
+					$ttl = ($this->requestStr('ttl')) ? $this->requestStr('ttl') : 7200;
 				} 
 				elseif($_SESSION['rezgo_refid_val']) { $refid = $_SESSION['rezgo_refid_val']; $ttl = $_SESSION['rezgo_refid_ttl']; }
 				elseif($_COOKIE['rezgo_refid_val']) { $refid = $_COOKIE['rezgo_refid_val']; $ttl = $_COOKIE['rezgo_refid_ttl']; }
@@ -174,7 +174,7 @@
 					unset($_SESSION['rezgo_refid_ttl']);
 				}
 				
-				if(isset($new_header)) $this->sendTo((($_SERVER['HTTPS']) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].$new_header);
+				if(isset($new_header)) $this->sendTo((($this->checkSecure()) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].$new_header);
 			}	
 			
 			// handle the promo code if one is set
@@ -182,13 +182,13 @@
 				
 				$ttl = 1209600; // two weeks is the default time-to-live for the promo cookie
 				
-				if(isset($_REQUEST['promo']) && !$_REQUEST['promo']) {
+				if(isset($_REQUEST['promo']) && !$this->requestStr('promo')) {
 					$_REQUEST['promo'] = ' '; // force a request below
 					$ttl = -1; // set the ttl to -1, removing the promo code
 				}
 				
-				if($_REQUEST['promo']) {
-					if($_REQUEST['promo'] == ' ') unset($_REQUEST['promo']);
+				if($this->requestStr('promo')) {
+					if($this->requestStr('promo') == ' ') unset($_REQUEST['promo']);
 				
 					$new_header = $_SERVER['REQUEST_URI'];
 					
@@ -202,7 +202,7 @@
 					
 					if(substr($new_header, -1) == '?') { $new_header = substr($new_header, 0, -1); }
 					
-					$promo = $_REQUEST['promo'];
+					$promo = $this->requestStr('promo');
 				} 
 				elseif($_SESSION['rezgo_promo']) { $promo = $_SESSION['rezgo_promo']; }
 				elseif($_COOKIE['rezgo_promo']) { $promo = $_COOKIE['rezgo_promo']; }
@@ -216,16 +216,16 @@
 					unset($_SESSION['rezgo_promo']);
 				}
 				
-				if(isset($new_header)) $this->sendTo((($_SERVER['HTTPS']) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].$new_header);				
+				if(isset($new_header)) $this->sendTo((($this->checkSecure()) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].$new_header);				
 			}
 			
 			// handle the add to cart request if one is set
-			if(is_array($_REQUEST['add']) || $_COOKIE['rezgo_cart_'.REZGO_CID] || $_SESSION['rezgo_cart_'.REZGO_CID] || $_REQUEST[order] == 'clear') {
+			if(is_array($this->requestStr('add')) || $_COOKIE['rezgo_cart_'.REZGO_CID] || $_SESSION['rezgo_cart_'.REZGO_CID] || $this->requestStr(order) == 'clear') {
 				
 				$ttl = (REZGO_CART_TTL > 0 || REZGO_CART_TTL === 0) ? REZGO_CART_TTL : 86400;
 				
 				$clear = 0;
-				if($_REQUEST['order'] == 'clear') {
+				if($this->requestStr('order') == 'clear') {
 				
 					$new_header = $_SERVER['REQUEST_URI'];
 					
@@ -240,7 +240,7 @@
 					$clear = 1;
 				}
 				
-				if(is_array($_REQUEST['add'])) {
+				if(is_array($this->requestStr('add'))) {
 				
 					if(!$new_header) $new_header = urldecode($_SERVER['REQUEST_URI']); //urldecode is needed to catch the [ marks on the array
 					
@@ -250,7 +250,7 @@
 					
 					if(substr($new_header, -1) == '?') { $new_header = substr($new_header, 0, -1); }
 					
-					$cart = $this->addToCart($_REQUEST['add'], $clear);
+					$cart = $this->addToCart($this->requestStr('add'), $clear);
 					
 				}
 				elseif($_SESSION['rezgo_cart_'.REZGO_CID]) { $cart = $_SESSION['rezgo_cart_'.REZGO_CID]; }
@@ -261,7 +261,7 @@
 				// we need to set the session here before we header the user off or the old session will override the new cart each time
 				$_SESSION['rezgo_cart_'.REZGO_CID] = $cart;
 				
-				if(isset($new_header)) $this->sendTo((($_SERVER['HTTPS']) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].$new_header);
+				if(isset($new_header)) $this->sendTo((($this->checkSecure()) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].$new_header);
 			}
 			
 			// registering global events, these can be manually changed later with the same methods
@@ -329,6 +329,22 @@
 		function cleanRequest() {
 			array_walk_recursive($_REQUEST, create_function('&$val', '$val = stripslashes($val);'));
 		}
+		
+		// output a fixed number from a request variable
+		function requestNum($request) {
+			$r = $_REQUEST[$request];
+			$r = preg_replace("/[^0-9.]*/", "", $r);
+			return $r;
+		}
+		
+		function requestStr($request) {
+			$r = $_REQUEST[$request];
+			
+			$r = strip_tags($r);
+			$r = preg_replace("/[;<>]*/", "", $r);
+			
+			return $r;
+		}
 
 		
 		// ------------------------------------------------------------------------------
@@ -385,7 +401,7 @@
 		function saveSearch() {
 			$search_array = array('pg', 'start_date', 'end_date', 'tags', 'search_in', 'search_for');
 			
-			foreach($search_array as $v) { if($_REQUEST[$v]) $search[] = $v.'='.rawurlencode($_REQUEST[$v]); }
+			foreach($search_array as $v) { if($this->requestStr($v)) $search[] = $v.'='.rawurlencode($this->requestStr($v)); }
 			
 			if($search) $search = '?'.implode("&", $search);
 			setcookie("rezgo_search", $search, strtotime('now +1 week'), '/', $_SERVER['SERVER_NAME']);
@@ -395,6 +411,12 @@
 		// Toggles secure (https) or insecure (http) mode for XML queries. Secure mode
 		// is required when making all commit or modification requests.
 		// ------------------------------------------------------------------------------		
+		function checkSecure() {
+			if((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443) {
+				return true;
+			} else { return false; }
+		}
+		
 		function setSecureXML($set) {
 			if($set) { $this->secure = 'https://'; }
 			else { $this->secure = 'http://'; }
@@ -404,7 +426,7 @@
 			$this->setSecureXML($set);
 			
 			if($set) { 
-				if($_SERVER['HTTPS'] != 'on') {
+				if(!$this->checkSecure()) {
 					if($this->config('REZGO_FORWARD_SECURE')) {
 						// since we are directing to a white label address, clean the request up
 						$request = '/book?'.$_SERVER['QUERY_STRING'];
@@ -416,7 +438,7 @@
 				} 
 			} else { 
 				// switch to non-https on the current domain
-				if($_SERVER['HTTPS'] == 'on') { 			
+				if($this->checkSecure()) { 			
 					$this->sendTo($this->secure.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
 				} 
 			}
@@ -538,7 +560,7 @@
 					$this->sendTo(REZGO_FATAL_ERROR_PAGE);
 				}
 			}
-		
+			
 			return $res;
 		}
 		
@@ -1050,17 +1072,17 @@
 			// generate the search string
 			// if no search is specified, find searched items (grouped)
 			if(!$a || $a == $_REQUEST) {
-				if($_REQUEST['search_for']) $str .= ($_REQUEST['search_in']) ? '&t='.urlencode($_REQUEST['search_in']) : '&t=smart';	
-				if($_REQUEST['search_for']) $str .= '&q='.urlencode(stripslashes($_REQUEST['search_for']));
-				if($_REQUEST['tags']) $str .= '&f[tags]='.urlencode($_REQUEST['tags']);
+				if($this->requestStr('search_for')) $str .= ($this->requestStr('search_in')) ? '&t='.urlencode($this->requestStr('search_in')) : '&t=smart';	
+				if($this->requestStr('search_for')) $str .= '&q='.urlencode(stripslashes($this->requestStr('search_for')));
+				if($this->requestStr('tags')) $str .= '&f[tags]='.urlencode($this->requestStr('tags'));
 				
-				if($_REQUEST['cid']) $str .= '&f[cid]='.urlencode($_REQUEST['cid']); // vendor only
+				if($this->requestNum('cid')) $str .= '&f[cid]='.urlencode($this->requestNum('cid')); // vendor only
 				
 				// details pages
-				if($_REQUEST['com']) $str .= '&t=com&q='.urlencode($_REQUEST['com']);
-				if($_REQUEST['uid']) $str .= '&t=uid&q='.urlencode($_REQUEST['uid']);
-				if($_REQUEST['option']) $str .= '&t=uid&q='.urlencode($_REQUEST['option']);
-				if($_REQUEST['date']) $str .= '&d='.urlencode($_REQUEST['date']);
+				if($this->requestNum('com')) $str .= '&t=com&q='.urlencode($this->requestNum('com'));
+				if($this->requestNum('uid')) $str .= '&t=uid&q='.urlencode($this->requestNum('uid'));
+				if($this->requestStr('option')) $str .= '&t=uid&q='.urlencode($this->requestStr('option'));
+				if($this->requestStr('date')) $str .= '&d='.urlencode($this->requestStr('date'));
 				
 				$a = ($a) ? $a : 'a=group'.$str;
 			}
@@ -1086,8 +1108,8 @@
 		
 			$loop = (string) $obj->index;
 			
-			$d[] = ($start) ? date("Y-M-d", strtotime($start)) : date("Y-M-d", strtotime($_REQUEST[start_date]));
-			$d[] = ($end) ? date("Y-M-d", strtotime($end)) : date("Y-M-d", strtotime($_REQUEST[end_date]));
+			$d[] = ($start) ? date("Y-M-d", strtotime($start)) : date("Y-M-d", strtotime($this->requestStr(start_date)));
+			$d[] = ($end) ? date("Y-M-d", strtotime($end)) : date("Y-M-d", strtotime($this->requestStr(end_date)));
 			if($d) { $d = implode(',', $d); } else { return false; }
 			
 			if(!$this->tour_availability_response[$loop])  {
@@ -1196,7 +1218,7 @@
 		function getTourPriceNum(&$obj=null, $order=null) {
 			if(!$obj) $obj = $this->getItem();
 			// get the value from either the order object or the _REQUEST var
-			$val = (is_object($order)) ? $order->{$obj->name.'_num'} : $_REQUEST[$obj->name.'_num'];
+			$val = (is_object($order)) ? $order->{$obj->name.'_num'} : $this->requestStr($obj->name.'_num');
 			for($n=1; $n<=$val; $n++) {
 				$ret[] = $n;
 			}
@@ -1576,15 +1598,15 @@
 		}
 		
 		function getPaxString() {
-			if($_REQUEST['adult_num']) $pax_list .= '&adult_num='.$_REQUEST['adult_num'];
-			if($_REQUEST['child_num']) $pax_list .= '&child_num='.$_REQUEST['child_num'];
-			if($_REQUEST['senior_num']) $pax_list .= '&senior_num='.$_REQUEST['senior_num'];
-			if($_REQUEST['price4_num']) $pax_list .= '&price4_num='.$_REQUEST['price4_num'];
-			if($_REQUEST['price5_num']) $pax_list .= '&price5_num='.$_REQUEST['price5_num'];
-			if($_REQUEST['price6_num']) $pax_list .= '&price6_num='.$_REQUEST['price6_num'];
-			if($_REQUEST['price7_num']) $pax_list .= '&price7_num='.$_REQUEST['price7_num'];
-			if($_REQUEST['price8_num']) $pax_list .= '&price8_num='.$_REQUEST['price8_num'];
-			if($_REQUEST['price9_num']) $pax_list .= '&price9_num='.$_REQUEST['price9_num'];
+			if($this->requestNum('adult_num')) $pax_list .= '&adult_num='.$this->requestNum('adult_num');
+			if($this->requestNum('child_num')) $pax_list .= '&child_num='.$this->requestNum('child_num');
+			if($this->requestNum('senior_num')) $pax_list .= '&senior_num='.$this->requestNum('senior_num');
+			if($this->requestNum('price4_num')) $pax_list .= '&price4_num='.$this->requestNum('price4_num');
+			if($this->requestNum('price5_num')) $pax_list .= '&price5_num='.$this->requestNum('price5_num');
+			if($this->requestNum('price6_num')) $pax_list .= '&price6_num='.$this->requestNum('price6_num');
+			if($this->requestNum('price7_num')) $pax_list .= '&price7_num='.$this->requestNum('price7_num');
+			if($this->requestNum('price8_num')) $pax_list .= '&price8_num='.$this->requestNum('price8_num');
+			if($this->requestNum('price9_num')) $pax_list .= '&price9_num='.$this->requestNum('price9_num');
 			
 			return $pax_list;
 		}
@@ -1674,6 +1696,9 @@
 			// add in external elements
 			($this->refid) ? $res['refid'] = '&refid='.$this->refid : 0;
 			($this->promo_code) ? $res['promo'] = '&trigger_code='.$this->promo_code : 0;
+			
+			// add in requesting IP
+			$res['ip'] = $_SERVER["REMOTE_ADDR"];
 			
 			$request = '&'.implode('&', $res);
 			
@@ -1786,9 +1811,10 @@
 			($this->refid) ? $res[] = '<refid>'.$this->refid.'</refid>' : 0;
 			($this->promo_code) ? $res[] = '<trigger_code>'.$this->promo_code.'</trigger_code>' : 0;
 			
-			$res[] = '</payment>';
+			// add in requesting IP
+			$res[] = '<ip>'.$_SERVER["REMOTE_ADDR"].'</ip>';
 			
-			//$res = str_replace("<", "&lt", $res);
+			$res[] = '</payment>';
 			
 			$request = implode('', $res);
 			
