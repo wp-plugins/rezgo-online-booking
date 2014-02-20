@@ -299,28 +299,26 @@
 					
 					<dt>Forward secure page to Rezgo:</dt>
 					<dd><input type="checkbox" name="rezgo_forward_secure" value="1" '.$forward_secure_checked.' onclick="if(this.checked == true) { $(\'#alternate_url\').fadeOut(); } else { $(\'#alternate_url\').fadeIn(); }" /></dd>
-					
-					<div id="alternate_url" style="display:'.(($forward_secure_checked) ? 'none' : '').';">
-						<dt class=note>By default, Rezgo will use your current domain for the secure site.  If you have another secure domain you want to use (such as secure.mysite.com) you can specify it here. Otherwise leave this blank.</dt>
-						<br><br>
-					
+				</dl>
+				
+				<div id="alternate_url" style="display:'.(($forward_secure_checked) ? 'none' : '').';">
+					<dl>
+						<dt class="note">By default, Rezgo will use your current domain for the secure site.  If you have another secure domain you want to use (such as secure.mysite.com) you can specify it here. Otherwise leave this blank.</dt>
 						<dt>Alternate Secure URL:</dt>
 						<dd><input type="text" name="rezgo_secure_url" size="50" value="'.get_option('rezgo_secure_url').'" /></dd>
-					</div>
-					
-				</dl>
+					</dl><br clear="all" />
+				</div>
+				
 			</fieldset>
 			</div>
-			<dl>	
-					
-
-			<dd><input type="submit" class="button-primary" value="Save Changes" /></dd>		
-		</dl>
+		<br />
+		<input type="submit" class="button-primary" value="Save Changes" />
 		<input type="hidden" name="rezgo_update" value="1" />
 		<input type="hidden" name="action" value="update" />
 		<input type="hidden" name="page_options" value="rezgo_cid,rezgo_api_key,rezgo_uri,rezgo_result_num" />
 		
 		</form>
+		<br clear="all" />
 		</div>
 		';
 		

@@ -4,7 +4,7 @@
 		Plugin Name: Rezgo Online Booking
 		Plugin URI: http://wordpress.org/extend/plugins/rezgo-online-booking/
 		Description: Connect WordPress to your Rezgo account and accept online bookings directly on your website.
-		Version: 1.8.2
+		Version: 1.8.3
 		Author: Rezgo
 		Author URI: http://www.rezgo.com
 		License: Modified BSD
@@ -17,13 +17,10 @@
 		- Finding your Rezgo CID and API KEY
 				http://support.rezgo.com/developers/xml-api-key
 		
-		- Discussion and Feedback
-				http://getsatisfaction.com/rezgo/products/rezgo_rezgo_open_source_php_parser
-		
 		AUTHOR:
 				Kevin Campbell, John McDonald
 		
-		Copyright (c) 2011, Rezgo (A Division of Sentias Software Corp.)
+		Copyright (c) 2011-2014, Rezgo (A Division of Sentias Software Corp.)
 		All rights reserved.
 		
 		Redistribution and use in source form, with or without modification,

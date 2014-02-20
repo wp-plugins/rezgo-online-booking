@@ -4,7 +4,7 @@ Donate link: http://www.rezgo.com/
 Tags:  tour operator software, tour booking system, activity booking software, tours, activities, events, attractions, booking, reservation, ticketing, e-commerce, business, rezgo
 Requires at least: 3.0.0
 Tested up to: 3.8.1
-Stable tag: 1.8.2
+Stable tag: 1.8.3
 
 Sell your tours, activities, and events on your WordPress website using Rezgo.
 
@@ -179,6 +179,9 @@ certificate, the transaction will complete on your Rezgo hosted
 booking engine.
 
 == Changelog ==
+
+= 1.8.3 =
+* Minor bug fixes.
 
 = 1.8.2 =
 * Added new output method.

@@ -29,7 +29,8 @@
    margin-left:10px;
 }
 
-#rezgo_settings form dt.note {
+#rezgo_settings form dt.note,
+#rezgo_settings form div.note {
 	width:auto;
 	color:#21759B;
 	padding:12px 0;
@@ -49,24 +50,30 @@
 }
 
 #rezgo_settings .field_frame {
-	-moz-border-radius:5px 5px 5px 5px;
-	-webkit-border-radius:5px 5px 5px 5px;
-	-khtml-border-radius:5px;
-	border:3px solid #ccc;
+	background-color: #FFF;
+	border: 1px solid #DDD;
+	border-radius: 4px;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
 	margin:20px 10px;
 	width:900px;
+	padding-bottom:20px;
 }
 
 #rezgo_settings legend {
-	font-weight:bold;
+	font-weight:500;
 	font-size:15px;
-	padding: 8px 10px;
-	color:#666;
-	text-shadow:1px 1px #fff;
+	padding: 10px;
+	color:#FFF;
 	width:880px;
-	background: -webkit-gradient(linear, left top, left bottom, from(#ccc), to(#ddd));
-	background: -moz-linear-gradient(top,  #ccc,  #ddd);
-	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ccc', endColorstr='#ddd');
+	background-image: linear-gradient(to bottom, #2EA2CC 0px, #0074A2 100%);
+	background-repeat: repeat-x;
+	border-bottom:1px solid #DDD;
+	-webkit-border-top-left-radius: 4px;
+	-webkit-border-top-right-radius: 4px;
+	-moz-border-radius-topleft: 4px;
+	-moz-border-radius-topright: 4px;
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
 }
 
 #rezgo_settings legend.account_info {
@@ -79,9 +86,9 @@
 }
 
 #rezgo_settings .button-primary {
-	-moz-border-radius: 4px 4px 4px 4px;
-	font-size:16px !important;
-	padding:5px 15px;
+	/*-moz-border-radius: 4px 4px 4px 4px;
+	padding:5px 15px;*/
+	font-size:14px !important;
 }
 
 #rezgo_settings .api_box {

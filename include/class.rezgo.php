@@ -1,10 +1,10 @@
 <?php
-
+	
 	/*
 		This is the Rezgo parser class, it handles processing for the Rezgo XML.
 		
 		VERSION:
-				1.8
+				1.8.3
 		
 		- Documentation and latest version
 				http://support.rezgo.com/customer/portal/articles/1153719-open-source-php-parser
@@ -12,13 +12,10 @@
 		- Finding your Rezgo CID and API KEY
 				http://support.rezgo.com/customer/portal/articles/831818-xml-api-key
 		
-		- Discussion and Feedback
-				http://getsatisfaction.com/rezgo/products/rezgo_rezgo_open_source_php_parser
-		
 		AUTHOR:
 				Kevin Campbell
 		
-		Copyright (c) 2012-2013, Rezgo (A Division of Sentias Software Corp.)
+		Copyright (c) 2012-2014, Rezgo (A Division of Sentias Software Corp.)
 		All rights reserved.
 		
 		Redistribution and use in source form, with or without modification,
@@ -49,7 +46,7 @@
 
 	class RezgoSite {
 	
-		var $version = '1.8';
+		var $version = '1.8.2';
 	
 		var $xml_path;
 		
@@ -136,16 +133,16 @@
 			$this->setSecure($secure);
 			
 			// perform some variable filtering
-			if($this->requestStr('start_date')) {
-				if(strtotime($this->requestStr('start_date')) == 0) unset($_REQUEST['start_date']);
+			if($_REQUEST['start_date']) {
+				if(strtotime($_REQUEST['start_date']) == 0) unset($_REQUEST['start_date']);
 			}
-			if($this->requestStr('end_date')) {
-				if(strtotime($this->requestStr('end_date')) == 0) unset($_REQUEST['end_date']);
+			if($_REQUEST['end_date']) {
+				if(strtotime($_REQUEST['end_date']) == 0) unset($_REQUEST['end_date']);
 			}
 			
 			// handle the refID if one is set
-			if($this->requestStr('refid') || $this->requestStr('ttl') || $_COOKIE['rezgo_refid_val'] || $_SESSION['rezgo_refid_val']) {
-				if($this->requestStr('refid') || $this->requestStr('ttl')) {
+			if($_REQUEST['refid'] || $_REQUEST['ttl'] || $_COOKIE['rezgo_refid_val'] || $_SESSION['rezgo_refid_val']) {
+				if($_REQUEST['refid'] || $_REQUEST['ttl']) {
 					$new_header = $_SERVER['REQUEST_URI'];
 					
 					// remove the refid information wherever it is
@@ -182,13 +179,13 @@
 				
 				$ttl = 1209600; // two weeks is the default time-to-live for the promo cookie
 				
-				if(isset($_REQUEST['promo']) && !$this->requestStr('promo')) {
+				if(isset($_REQUEST['promo']) && !$_REQUEST['promo']) {
 					$_REQUEST['promo'] = ' '; // force a request below
 					$ttl = -1; // set the ttl to -1, removing the promo code
 				}
 				
-				if($this->requestStr('promo')) {
-					if($this->requestStr('promo') == ' ') unset($_REQUEST['promo']);
+				if($_REQUEST['promo']) {
+					if($_REQUEST['promo'] == ' ') unset($_REQUEST['promo']);
 				
 					$new_header = $_SERVER['REQUEST_URI'];
 					
@@ -220,12 +217,12 @@
 			}
 			
 			// handle the add to cart request if one is set
-			if(is_array($this->requestStr('add')) || $_COOKIE['rezgo_cart_'.REZGO_CID] || $_SESSION['rezgo_cart_'.REZGO_CID] || $this->requestStr(order) == 'clear') {
+			if(is_array($_REQUEST['add']) || $_COOKIE['rezgo_cart_'.REZGO_CID] || $_SESSION['rezgo_cart_'.REZGO_CID] || $_REQUEST[order] == 'clear') {
 				
 				$ttl = (REZGO_CART_TTL > 0 || REZGO_CART_TTL === 0) ? REZGO_CART_TTL : 86400;
 				
 				$clear = 0;
-				if($this->requestStr('order') == 'clear') {
+				if($_REQUEST['order'] == 'clear') {
 				
 					$new_header = $_SERVER['REQUEST_URI'];
 					
@@ -240,7 +237,7 @@
 					$clear = 1;
 				}
 				
-				if(is_array($this->requestStr('add'))) {
+				if(is_array($_REQUEST['add'])) {
 				
 					if(!$new_header) $new_header = urldecode($_SERVER['REQUEST_URI']); //urldecode is needed to catch the [ marks on the array
 					
@@ -250,7 +247,7 @@
 					
 					if(substr($new_header, -1) == '?') { $new_header = substr($new_header, 0, -1); }
 					
-					$cart = $this->addToCart($this->requestStr('add'), $clear);
+					$cart = $this->addToCart($_REQUEST['add'], $clear);
 					
 				}
 				elseif($_SESSION['rezgo_cart_'.REZGO_CID]) { $cart = $_SESSION['rezgo_cart_'.REZGO_CID]; }
@@ -339,10 +336,8 @@
 		
 		function requestStr($request) {
 			$r = $_REQUEST[$request];
-			
 			$r = strip_tags($r);
 			$r = preg_replace("/[;<>]*/", "", $r);
-			
 			return $r;
 		}
 
@@ -401,7 +396,7 @@
 		function saveSearch() {
 			$search_array = array('pg', 'start_date', 'end_date', 'tags', 'search_in', 'search_for');
 			
-			foreach($search_array as $v) { if($this->requestStr($v)) $search[] = $v.'='.rawurlencode($this->requestStr($v)); }
+			foreach($search_array as $v) { if($_REQUEST[$v]) $search[] = $v.'='.rawurlencode($_REQUEST[$v]); }
 			
 			if($search) $search = '?'.implode("&", $search);
 			setcookie("rezgo_search", $search, strtotime('now +1 week'), '/', $_SERVER['SERVER_NAME']);
@@ -1218,7 +1213,7 @@
 		function getTourPriceNum(&$obj=null, $order=null) {
 			if(!$obj) $obj = $this->getItem();
 			// get the value from either the order object or the _REQUEST var
-			$val = (is_object($order)) ? $order->{$obj->name.'_num'} : $this->requestStr($obj->name.'_num');
+			$val = (is_object($order)) ? $order->{$obj->name.'_num'} : $_REQUEST[$obj->name.'_num'];
 			for($n=1; $n<=$val; $n++) {
 				$ret[] = $n;
 			}
