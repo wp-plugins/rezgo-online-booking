@@ -1,4 +1,4 @@
-Copyright (c) 2011, Rezgo (A Division of Sentias Software Corp.)
+Copyright (c) 2011-2014, Rezgo (A Division of Sentias Software Corp.)
 All rights reserved.
 
 Redistribution and use in source form, with or without modification,

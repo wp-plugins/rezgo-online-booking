@@ -52,7 +52,9 @@
 	
 	<? $site->readItem($item) ?>
 
-	<div class="item">
+	<? $unavailable_class = ($site->requestStr('start_date') AND count($site->getTourAvailability($item)) == 0) ? 1 : 0; ?>
+
+	<div class="item<?=(($unavailable_class) ? ' inventory_unavailable' : '')?>">
     <div class="image">
     	<a href="<?=$site->base?>/details/<?=$item->com?>/<?=$site->seoEncode($item->name)?>">
     		<img src="http://images.rezgo.com/items/<?=$item->cid?>-<?=$item->com?>.jpg" border="0" />
