@@ -4,7 +4,7 @@ Donate link: http://www.rezgo.com/
 Tags:  tour operator software, tour booking system, activity booking software, tours, activities, events, attractions, booking, reservation, ticketing, e-commerce, business, rezgo
 Requires at least: 3.0.0
 Tested up to: 3.8.1
-Stable tag: 1.8.3
+Stable tag: 1.8.4
 
 Sell your tours, activities, and events on your WordPress website using Rezgo.
 
@@ -50,8 +50,7 @@ customer booking experience.
 If you need help getting set-up, Rezgo support is only a click or
 phone call away:
 
-* [Rezgo Support Website](http://support.rezgo.com)
-* [Customer service forum](http://getsatisfaction.com/rezgo)
+* [Rezgo Support](http://www.rezgo.com/support/)
 * [Rezgo on Twitter](http://www.twitter.com/rezgo)
 * [Rezgo on Facebook](http://www.facebook.com/rezgo)
 * Pick up the phone and call +1 (604) 983-0083
@@ -67,7 +66,7 @@ to 'Plugins / Add New' and searching for 'Rezgo' **OR** upload the
 2. Activate the Rezgo plugin through the 'Plugins' menu in WordPress
 3. Add your Rezgo Company Code (CID) and API KEY in the plugin settings
 4. Use the shortcode [rezgo_shortcode] in your page content. Advanced shortcode commands are [available here](http://rezgo.me/wordpress).
-5. Or place `<?php do_action('rezgo_tpl_display'); ?>` in your templates
+5. Or place `<?php echo do_shortcode('[rezgo_shortcode]'); ?>` in your templates
 
 = Plugin Configuration and Settings =
 
@@ -179,6 +178,9 @@ certificate, the transaction will complete on your Rezgo hosted
 booking engine.
 
 == Changelog ==
+
+= 1.8.4 =
+* Fixes to media gallery and map on details page.
 
 = 1.8.3 =
 * Minor bug fixes.
