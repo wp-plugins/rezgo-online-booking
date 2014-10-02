@@ -116,17 +116,10 @@
 			   			<? if($g == 4) { ?></div><div><? $g = 1; } else { $g++; } ?> 
 			   			
 			   			<? if($media->type == 'image') { ?>
-			   				<a href="http://images.rezgo.com/gallery/<?=$media->path?>" rel="gallery[gal]" title="<?=$media->caption?>">
-			   					<img src="http://images.rezgo.com/gallery/thumbs/<?=$media->image?>">
+			   				<a href="<?=$media->path?>" rel="gallery[gal]" title="<?=$media->caption?>">
+			   					<img src="<?=$media->path?>">
 			   				</a>
 			        <? } ?> 
-			        
-			        <? if($media->type == 'video') { ?>
-			        	<a href="<?=$media->path?>" rel="gallery[gal]" title="<?=$media->caption?>" style="position:relative;">
-			   					<img src="http://images.rezgo.com/video/<?=$media->image?>" alt="Video">
-			   					<div style="height:32px; width:32px; background:url(<?=$site->path?>/images/play.png); position:absolute; bottom:-35px; right:9px;"></div>
-			   				</a>
-			        <? } ?>
 			         
 			   		<? endforeach; ?>
 			   	</div>
@@ -146,12 +139,12 @@
 
 	<!-- map start -->
 	<div id="map">
-		<h1>Location map</h1>
-		<p class="item">
-			<a href="http://maps.google.com/maps?f=q&hl=en&geocode=&q=<?=$item->lat?>,<?=$item->lon?>&ie=UTF8&ll=<?=$item->lat?>,<?=$item->lon?>&iwloc=addr&z=<? if($site->exists($item->zoom)) { ?><?=$item->zoom?><? } else { ?>14<? } ?>" target ="_blank">
-				<img src="http://images.rezgo.com/geotag/<?=$item->lat?>,<?=$item->lon?><? if($site->exists($item->zoom)) { ?>,<?=$item->zoom?><? } ?>.jpg" align="middle" />
-			</a>
-		</p>
+		<? if($site->exists($item->lat)) { ?>
+    <h1>Location map</h1>
+    <div style="width:90%; border:2px solid #CCC; margin:5px auto;">
+      <? if (!$site->exists($item->zoom)) { $map_zoom = 8; } else { $map_zoom = $item->zoom; } ?>
+        <iframe width="100%" height="300" frameborder="0" style="border:0;margin-bottom:0;" src="https://www.google.com/maps/embed/v1/view?key=AIzaSyCqFNdI5b319sgzE3WH3Bw97fBl4kRVzWw&center=<?=$item->lat?>,<?=$item->lon?>&zoom=<?=$map_zoom?>"></iframe></div>
+    <? } ?>
 	</div>
 	<!-- map end-->
 
