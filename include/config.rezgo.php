@@ -53,7 +53,7 @@
 	define(	"REZGO_DIE_ON_ERROR",				0																							);
 	
 	// Output all XML transactions. THIS MUST BE SET TO 1 TO USE THE SETTINGS BELOW
-	define(	"REZGO_TRACE_XML",					0																							);
+	define(	"REZGO_TRACE_XML",					1																							);
 	
 	// Include calls to the XML Cache (repeat queries) in the XML output
 	define(	"REZGO_INCLUDE_CACHE_XML",	0																							);

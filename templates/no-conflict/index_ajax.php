@@ -53,11 +53,19 @@
 	<? $site->readItem($item) ?>
 
 	<? $unavailable_class = ($site->requestStr('start_date') AND count($site->getTourAvailability($item)) == 0) ? 1 : 0; ?>
-
+  
 	<div class="item<?=(($unavailable_class) ? ' inventory_unavailable' : '')?>">
-    <div class="image">
+    <div class="image_new">
     	<a href="<?=$site->base?>/details/<?=$item->com?>/<?=$site->seoEncode($item->name)?>">
-    		<img src="http://images.rezgo.com/items/<?=$item->cid?>-<?=$item->com?>.jpg" border="0" />
+        
+				<? if(is_array(getimagesize('http://images.rezgo.com/items/'.$item->cid.'-'.$item->com.'.jpg'))) { ?>
+            <img src="http://images.rezgo.com/items/<?=$item->cid?>-<?=$item->com?>.jpg" class="old_img" />
+        <? } elseif ($item->image_gallery->image[0]) { ?>
+            <img src="<?=$item->image_gallery->image[0]->path?>" class="new_img" />
+        <? } else { ?>
+            <img src="<?=$site->path?>/images/no-image.png" class="no_img" />
+        <? } ?>
+        
     	</a>
     </div>
     <h1 class="tour_title"><a href="<?=$site->base?>/details/<?=$item->com?>/<?=$site->seoEncode($item->name)?>"><?=$item->name?></a></h1>
