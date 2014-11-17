@@ -33,9 +33,6 @@
 				  <? $site->readItem($order); ?>
 				  
 				  <div class="cart">
-	        	<div class="cart_img">
-	          	<img border="0" src="http://images.rezgo.com/items/<?=$order->cid?>-<?=$order->com?>.jpg" width="80px">
-	          </div>
 	          <div class="cart_name">
 	          	<ol class="cart_detail">
 	            	<li class="cart_tour_name">

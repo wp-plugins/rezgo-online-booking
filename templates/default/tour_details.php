@@ -31,7 +31,17 @@
 	<? $site->readItem($item) ?>
 	
   <div class="item last"> <!-- use last to eliminate bottom border -->
-    <div class="image"><img src="http://images.rezgo.com/items/<?=$item->cid?>-<?=$item->com?>.jpg" border="0" /></div>
+    <div class="image_new">
+    
+			<? if(is_array(getimagesize('http://images.rezgo.com/items/'.$item->cid.'-'.$item->com.'.jpg'))) { ?>
+          <img src="http://images.rezgo.com/items/<?=$item->cid?>-<?=$item->com?>.jpg" class="old_img" />
+      <? } elseif ($item->image_gallery->image[0]) { ?>
+          <img src="<?=$item->image_gallery->image[0]->path?>" class="new_img" />
+      <? } else { ?>
+          <img src="<?=$site->path?>/images/no-image.png" class="no_img" />
+      <? } ?>
+    
+    </div>
 
     <h1 class="tour_title"><?=$item->name?></h1>
     <div class="location">
@@ -156,8 +166,13 @@
 		   		
 		   		<script>
 		   			var fields = new Array();
+						var required_num = 0;
+				
+						function isInt(n) {
+							 return n % 1 === 0;
+						} 
 		   			
-		   			// validation for the inputted data
+		   			// validation for pax data
 		   			
 						function check() {
 							var err;
@@ -169,13 +184,15 @@
 								count += $('#' + v).val() * 1;
 								
 								// has a required price point been used
-								if(fields[v] && $('#' + v).val()) { required = 1; }
+								if(fields[v] && $('#' + v).val() >= 1) { required = 1; }
 							}
 							
 							if(count == 0 || !count) {
 								err = 'Please enter the number you would like to book.';
-							} else if(required == 0) {
+							} else if(required_num > 0 && required == 0) {
 								err = 'At least one marked ( * ) price point is required to book.';
+							} else if(!isInt(count)) {
+								err = 'Please enter a whole number. No decimal places allowed.';
 							} else if(count < <?=$item->per?>) {
 								err = 'At least <?=$item->per?> people are required to book.';
 							} else if(count > <?=$item->date->availability?>) {
@@ -206,7 +223,10 @@
 						<? if($_COOKIE['rezgo_promo']) { ?><input type="hidden" name="promo" value="<?=$_COOKIE['rezgo_promo']?>"><? } ?>
 						<? if($_COOKIE['rezgo_refid_val']) { ?><input type="hidden" name="refid" value="<?=$_COOKIE['rezgo_refid_val']?>"><? } ?>
 						
-						<? foreach( $site->getTourPrices($item) as $price ): ?>
+						<? 
+						$total_required = 0;
+						foreach( $site->getTourPrices($item) as $price ): 
+						?>
 						
 							<script>fields['<?=$price->name?>'] = <?=(($price->required) ? 1 : 0)?>;</script>
 						
@@ -218,7 +238,11 @@
 			   					<?=$site->formatCurrency($price->price)?>
 			   				</li>
 			   			</ul> 
-				   	<? endforeach; ?>
+				   	<? 
+							if ($price->required) { $total_required++; }
+						endforeach; 
+						?>
+				  	<script>required_num = <?=$total_required?>;</script>
 				  
 				  	<? if($site->getTourRequired()) { ?>
 			   			<span class="memo">At least one marked ( * ) price point is required to book.</span>
