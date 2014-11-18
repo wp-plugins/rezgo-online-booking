@@ -613,22 +613,6 @@ a.caldisabled {
 	border-bottom:none;
 }
 
-#rezgo #left_panel .item .image {
-	clear:both;
-	float:left;
-	width:165px;
-	height:165px;
-	background:url(images/img_shadow.png) 0 0 no-repeat;
-}
-
-#rezgo #left_panel .item .image img {
-	width:145px;
-	height:145px;
-	position:relative;
-	top:6px;
-	left:6px;
-}
-
 #rezgo #left_panel h1.tour_title {
 	display:block;
 	clear:right;
@@ -3081,3 +3065,67 @@ a.disabled {
 	color:#666;
 	font-size: 12px;
 }
+
+/* transition image styles */
+
+/* old */
+#rezgo #left_panel .item .image {
+	clear:both;
+	float:left;
+	width:165px;
+	height:165px;
+	background:url(images/img_shadow.png) 0 0 no-repeat;
+}
+
+#rezgo #left_panel .item .image img {
+	width:145px;
+	height:145px;
+	position:relative;
+	top:6px;
+	left:6px;
+}
+
+/* new */
+#rezgo #left_panel .item .image_new {
+	background: url(images/img_shadow.png) no-repeat scroll;
+	clear: both;
+	float: left;
+	height: 165px;
+	width: 165px;
+	padding-left: 8px;
+	padding-top: 8px;               
+}       
+#rezgo #left_panel .item .new_img {
+	height: 142px;
+	width: auto !important;
+	position: absolute;
+	clip: rect(0px,142px,142px,0px);               
+	border:none;
+} 
+#rezgo #left_panel .item .old_img {
+	height: 142px;
+	width: 142px;
+	border:none;
+}     
+
+#rezgo #left_panel .item .no_img {
+	width:145px;
+	height:145px;
+}      
+
+/* tabs override */
+#rezgo #tab_box ul.tabs, 
+#rezgo #tab_box ul.tabs li {
+	float: none !important;
+	border: none !important;
+	line-height: 17px;
+}
+
+#rezgo #tab_box ul.tabs li a {
+	display: inline !important;
+}
+
+#rezgo ul.checkout_box {
+	display: inline !important;
+} 
+
