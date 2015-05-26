@@ -58,10 +58,10 @@
     <div class="image_new">
     	<a href="<?=$site->base?>/details/<?=$item->com?>/<?=$site->seoEncode($item->name)?>">
         
-				<? if(is_array(getimagesize('http://images.rezgo.com/items/'.$item->cid.'-'.$item->com.'.jpg'))) { ?>
-            <img src="http://images.rezgo.com/items/<?=$item->cid?>-<?=$item->com?>.jpg" class="old_img" />
-        <? } elseif ($item->image_gallery->image[0]) { ?>
+        <? if ($item->image_gallery->image[0]) { ?>
             <img src="<?=$item->image_gallery->image[0]->path?>" class="new_img" />
+				<? } elseif(is_array(getimagesize('http://images.rezgo.com/items/'.$item->cid.'-'.$item->com.'.jpg'))) { ?>
+            <img src="http://images.rezgo.com/items/<?=$item->cid?>-<?=$item->com?>.jpg" class="old_img" />
         <? } else { ?>
             <img src="<?=$site->path?>/images/no-image.png" class="no_img" />
         <? } ?>
