@@ -425,7 +425,7 @@ fieldset {
 	font-size:16px;
 	color:#fff;
 	text-shadow:0 0 1px #666;
-	width:155px;
+	width:135px;
 	cursor:pointer;
 }
 
@@ -3129,3 +3129,9 @@ a.disabled {
 	display: inline !important;
 } 
 
+
+/* centering thumbnail images in WordPress plugin */
+#rezgo #left_panel .item .new_img {
+    clip: rect(0px, 197px, 142px, 55px);
+    left: -27px;
+}

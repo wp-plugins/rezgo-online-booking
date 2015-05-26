@@ -3,8 +3,8 @@ Contributors: rezgo
 Donate link: http://www.rezgo.com/
 Tags:  tour operator software, tour booking system, activity booking software, tours, activities, events, attractions, booking, reservation, ticketing, e-commerce, business, rezgo
 Requires at least: 3.0.0
-Tested up to: 4.0
-Stable tag: 1.8.6
+Tested up to: 4.2.2
+Stable tag: 1.8.7
 
 Sell your tours, activities, and events on your WordPress website using Rezgo.
 
@@ -50,7 +50,7 @@ customer booking experience.
 If you need help getting set-up, Rezgo support is only a click or
 phone call away:
 
-* [Rezgo Support](http://www.rezgo.com/support/)
+* [Rezgo Support](https://www.rezgo.com/support/)
 * [Rezgo on Twitter](http://www.twitter.com/rezgo)
 * [Rezgo on Facebook](http://www.facebook.com/rezgo)
 * Pick up the phone and call +1 (604) 983-0083
@@ -178,6 +178,13 @@ certificate, the transaction will complete on your Rezgo hosted
 booking engine.
 
 == Changelog ==
+
+= 1.8.7 =
+* Security patch for PrettyPhoto JS library
+* Re-ordered logic for fetching thumbnail images
+
+= 1.8.6 =
+* Various bug fixes
 
 = 1.8.5 =
 * Fixes to image thumbnails to support both new and old formats.
